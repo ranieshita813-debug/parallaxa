@@ -7,119 +7,119 @@ import {
   TwitterLogo,
   InstagramLogo,
   YoutubeLogo,
-  Globe,
-  Envelope,
-  Phone
+  Envelope
 } from '@phosphor-icons/react'
-import { banglaFontlogo, banglaFont } from '@/lib/font'
+import { banglaFontlogo } from '@/lib/font'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
   const params = useParams()
-  const locale = params?.locale || 'bn'
+  const locale = (params?.locale as string) || 'bn'
+  const isBn = locale === 'bn' || !locale
+
+  const banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
+  const formattedYear = isBn
+    ? String(currentYear).replace(/\d/g, (d) => banglaDigits[parseInt(d)])
+    : String(currentYear)
+
+  const links = isBn
+    ? [
+        { href: `/category/World`, label: 'বিশ্ব সংবাদ' },
+        { href: `/category/Technology`, label: 'প্রযুক্তি' },
+        { href: `/category/Business`, label: 'ব্যবসা ও বাণিজ্য' },
+        { href: `/category/Sports`, label: 'খেলাধুলা' },
+        { href: `/privacy`, label: 'গোপনীয়তা নীতি' },
+        { href: `/terms`, label: 'ব্যবহারের শর্তাবলী' },
+        { href: `/contact`, label: 'যোগাযোগ' },
+      ]
+    : [
+        { href: `/category/World`, label: 'World' },
+        { href: `/category/Technology`, label: 'Technology' },
+        { href: `/category/Business`, label: 'Business' },
+        { href: `/category/Sports`, label: 'Sports' },
+        { href: `/privacy`, label: 'Privacy Policy' },
+        { href: `/terms`, label: 'Terms' },
+        { href: `/contact`, label: 'Contact' },
+      ]
 
   return (
-    <footer className="bg-slate-900 text-slate-300 border-t border-slate-800 py-12 px-6 no-print">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+    <footer className="bg-slate-900 text-slate-300 border-t border-slate-800 py-3 px-4 sm:px-6 no-print w-full">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
 
-        {/* Column 1: Brand & Socials */}
-        <div className="space-y-4">
-          <Link href="/" className="inline-block select-none">
-            <h2 className={`${banglaFontlogo.className} text-3xl font-[900] text-white leading-none`}>
+        {/* Brand & Copyright */}
+        <div className="flex items-center gap-3 shrink-0">
+          <Link href={`/${locale}`} className="inline-block select-none">
+            <span className={`${banglaFontlogo.className} text-lg font-black text-white`}>
               অনলি্হিন্দু™
-            </h2>
+            </span>
           </Link>
-          <p className="text-xs text-slate-400 leading-relaxed max-w-xs">
-            সত্য, সনাতন ও মানবতার কল্যাণে সদা জাগ্রত। অনলি হিন্দু একটি প্রগতিশীল নিউজ প্ল্যাটফর্ম যা সর্বদা সঠিক খবর পরিবেশন করে।
+          <span className="text-slate-600">|</span>
+          <p className="text-slate-400 whitespace-nowrap">
+            &copy; {formattedYear} {isBn ? 'অনলি্হিন্দু™। সর্বস্বত্ব সংরক্ষিত।' : 'Only Hindu™. All rights reserved.'}
           </p>
-          <div className="flex items-center gap-3 pt-2">
-            <a href="#" className="p-2 bg-slate-800 hover:bg-red-600 rounded-xl hover:text-white transition-all" aria-label="Facebook">
-              <FacebookLogo size={18} weight="fill" />
+        </div>
+
+        {/* Center: Inline Navigation Links */}
+        <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-slate-400 font-medium">
+          {links.map((link, idx) => (
+            <span key={link.label} className="flex items-center gap-3">
+              {idx > 0 && <span className="text-slate-700 text-[10px]">•</span>}
+              <Link
+                href={`/${locale}${link.href.startsWith('/') ? link.href : '/' + link.href}`}
+                className="hover:text-white transition-colors whitespace-nowrap"
+              >
+                {link.label}
+              </Link>
+            </span>
+          ))}
+        </nav>
+
+        {/* Right: Contact & Socials */}
+        <div className="flex items-center gap-4 shrink-0">
+          <a
+            href="mailto:info@onlyhindu.com"
+            className="hidden sm:flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
+          >
+            <Envelope size={14} />
+            <span>info@onlyhindu.com</span>
+          </a>
+
+          <div className="flex items-center gap-1.5">
+            <a
+              href="#"
+              className="p-1.5 bg-slate-800 hover:bg-red-600 hover:text-white transition-all"
+              aria-label="Facebook"
+            >
+              <FacebookLogo size={14} weight="fill" />
             </a>
-            <a href="#" className="p-2 bg-slate-800 hover:bg-red-600 rounded-xl hover:text-white transition-all" aria-label="Twitter">
-              <TwitterLogo size={18} weight="fill" />
+            <a
+              href="#"
+              className="p-1.5 bg-slate-800 hover:bg-red-600 hover:text-white transition-all"
+              aria-label="Twitter"
+            >
+              <TwitterLogo size={14} weight="fill" />
             </a>
-            <a href="#" className="p-2 bg-slate-800 hover:bg-red-600 rounded-xl hover:text-white transition-all" aria-label="Instagram">
-              <InstagramLogo size={18} weight="fill" />
+            <a
+              href="#"
+              className="p-1.5 bg-slate-800 hover:bg-red-600 hover:text-white transition-all"
+              aria-label="Instagram"
+            >
+              <InstagramLogo size={14} weight="fill" />
             </a>
-            <a href="#" className="p-2 bg-slate-800 hover:bg-red-600 rounded-xl hover:text-white transition-all" aria-label="Youtube">
-              <YoutubeLogo size={18} weight="fill" />
+            <a
+              href="#"
+              className="p-1.5 bg-slate-800 hover:bg-red-600 hover:text-white transition-all"
+              aria-label="Youtube"
+            >
+              <YoutubeLogo size={14} weight="fill" />
             </a>
           </div>
+
+          <span className="hidden xl:inline text-slate-500 text-[11px]">
+            {isBn ? 'মানবতার কল্যাণে নিবেদিত ♥' : 'For humanity with ♥'}
+          </span>
         </div>
 
-        {/* Column 2: Sections */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-white">খবরের বিভাগসমূহ</h3>
-          <ul className="space-y-2 text-xs">
-            {[
-              { href: '/category/World', label: 'বিশ্ব সংবাদ (World)' },
-              { href: '/category/Technology', label: 'প্রযুক্তি (Technology)' },
-              { href: '/category/Business', label: 'ব্যবসা ও বাণিজ্য (Business)' },
-              { href: '/category/Sports', label: 'খেলাধুলা (Sports)' },
-            ].map((link) => (
-              <li key={link.label}>
-                <Link
-                  href={`/${locale}${link.href}`}
-                  className="hover:text-white hover:underline transition-colors"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Column 3: Corporate Links */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-white">প্রয়োজনীয় লিংক</h3>
-          <ul className="space-y-2 text-xs">
-            {[
-              { href: '#', label: 'গোপনীয়তা নীতি (Privacy Policy)' },
-              { href: '#', label: 'ব্যবহারের শর্তাবলী (Terms)' },
-              { href: '#', label: 'আমাদের সাথে যোগাযোগ (Contact)' },
-              { href: '#', label: 'বিজ্ঞাপন দিন (Advertise)' },
-            ].map((link) => (
-              <li key={link.label}>
-                <Link
-                  href={link.href}
-                  className="hover:text-white hover:underline transition-colors"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Column 4: Contact / Newsletter */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-white">যোগাযোগ ও জিজ্ঞাসা</h3>
-          <div className="space-y-3 text-xs text-slate-400">
-            <div className="flex items-center gap-2">
-              <Envelope size={16} className="text-slate-500" />
-              <span>info@onlyhindu.com</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone size={16} className="text-slate-500" />
-              <span>+৮৮০ ১২৩৪৫৬৭৮৯</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Globe size={16} className="text-slate-500" />
-              <span>www.onlyhindu.com</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <div className="max-w-7xl mx-auto pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-        <p>
-          &copy; {currentYear} অনলি্হিন্দু™। সর্বস্বত্ব সংরক্ষিত।
-        </p>
-        <p className="flex items-center gap-1">
-          Developed for humanity with <span className="text-red-500">♥</span>
-        </p>
       </div>
     </footer>
   )
