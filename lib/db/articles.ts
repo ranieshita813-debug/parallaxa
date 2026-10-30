@@ -43,6 +43,7 @@ export interface NewsArticle {
 
 export type CreateArticleInput = Omit<NewsArticle, 'id' | 'slug' | 'views' | 'updatedAt'> & {
   embedding?: number[] | string
+  userId?: string
 }
 export type UpdateArticleInput = Partial<CreateArticleInput>
 
@@ -304,7 +305,7 @@ export async function createArticle(input: CreateArticleInput): Promise<NewsArti
         ${input.status           ?? 'draft'},
         ${input.sourceUrl        ?? null},
          ${embeddingValue},
-        'd785d4d5-d04c-4602-853b-63a089a55e76') RETURNING *`
+        ${input.userId           ?? '51b08c19-b0fe-4674-b750-7cacb3a21b0f'}) RETURNING *`
     return rows[0] ? mapRow(rows[0]) : null
   } catch (e) { console.error('createArticle:', e); return null }
 }

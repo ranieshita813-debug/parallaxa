@@ -1,6 +1,30 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { neon } = require('@neondatabase/serverless');
+
+function loadEnv() {
+  if (process.env.DATABASE_URL) return;
+  const envPath = path.resolve(__dirname, '../.env');
+  if (fs.existsSync(envPath)) {
+    const content = fs.readFileSync(envPath, 'utf8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx > 0) {
+        const key = trimmed.slice(0, eqIdx).trim();
+        const val = trimmed.slice(eqIdx + 1).trim();
+        if (!process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    }
+  }
+}
+
+loadEnv();
 
 async function migrate() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -13,6 +37,67 @@ async function migrate() {
   console.log('Running migrations...');
   
   try {
+    try {
+      await sql`CREATE EXTENSION IF NOT EXISTS vector;`;
+      console.log('vector extension enabled/checked.');
+    } catch (e) {
+      console.warn('vector extension enable failed or not supported:', e.message);
+    }
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT,
+        role TEXT DEFAULT 'user',
+        email_verified TIMESTAMP WITH TIME ZONE,
+        verification_token TEXT,
+        reset_token TEXT,
+        reset_token_expires TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS articles (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title TEXT NOT NULL,
+        description TEXT,
+        content TEXT NOT NULL,
+        category TEXT NOT NULL,
+        author TEXT NOT NULL,
+        date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        image TEXT,
+        read_time INTEGER DEFAULT 0,
+        featured BOOLEAN DEFAULT FALSE,
+        breaking BOOLEAN DEFAULT FALSE,
+        trending BOOLEAN DEFAULT FALSE,
+        views INTEGER DEFAULT 0,
+        slug TEXT,
+        source_url TEXT,
+        seo_title TEXT,
+        meta_description TEXT,
+        focus_keyword TEXT,
+        canonical_url TEXT,
+        og_image TEXT,
+        twitter_card TEXT DEFAULT 'summary_large_image',
+        no_index BOOLEAN DEFAULT FALSE,
+        allow_comments BOOLEAN DEFAULT TRUE,
+        show_in_rss BOOLEAN DEFAULT TRUE,
+        amp_enabled BOOLEAN DEFAULT FALSE,
+        redirect_url TEXT,
+        css_class TEXT,
+        visibility TEXT DEFAULT 'public',
+        scheduled_at TIMESTAMP WITH TIME ZONE,
+        status TEXT DEFAULT 'draft',
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        embedding vector(768),
+        user_id UUID
+      );
+    `;
+
     await sql`
       CREATE TABLE IF NOT EXISTS home_sections (
         id SERIAL PRIMARY KEY,
@@ -26,12 +111,15 @@ async function migrate() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `;
+
     await sql`
-    CREATE TABLE IF NOT EXISTS settings (
+      CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      )`
+      );
+    `;
+
     await sql`
       CREATE TABLE IF NOT EXISTS reactions (
         id SERIAL PRIMARY KEY,
@@ -58,14 +146,14 @@ async function migrate() {
     // Convert article_id in reactions to TEXT if it's currently INTEGER
     try {
       await sql`ALTER TABLE reactions ALTER COLUMN article_id TYPE TEXT;`;
-    } catch (e) {
+    } catch {
       console.log('Alter reactions table article_id type skipped or already done.');
     }
     
     // Convert article_id in comments to TEXT if it's currently INTEGER
     try {
       await sql`ALTER TABLE comments ALTER COLUMN article_id TYPE TEXT;`;
-    } catch (e) {
+    } catch {
       console.log('Alter comments table article_id type skipped or already done.');
     }
 
