@@ -154,7 +154,7 @@ export const customBlockComponents = {
         href={props.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center px-6 py-2.5 rounded-none text-white text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-none"
+        className="inline-flex items-center px-6 py-2.5 rounded-md text-white text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-none"
         style={{ backgroundColor: props.color || '#1a1b1c' }}
       >
         {props.text}

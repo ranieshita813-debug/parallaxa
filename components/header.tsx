@@ -228,7 +228,7 @@ export function Header({
           </Link>
           <button
             onClick={() => setIsAnnVisible(false)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 transition-opacity p-1"
+            className="absolute right-3 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 transition-opacity p-1 rounded-full"
             aria-label={isBn ? 'বন্ধ করুন' : 'Dismiss'}
           >
             <X className="w-4 h-4" />
@@ -254,12 +254,12 @@ export function Header({
             </div>
           </div>
           <div className="relative group">
-            <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border px-2.5 py-0.5 hover:bg-background uppercase">
+            <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border px-2.5 py-0.5 rounded-md hover:bg-background uppercase">
               <Languages className="w-3.5 h-3.5" />
               {(pathname.split('/')[1] || 'bn').toUpperCase()}
               <ChevronDown className="w-3 h-3" />
             </button>
-            <div className="absolute top-full right-0 mt-1 bg-background border border-border shadow-xl p-1 w-24 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+            <div className="absolute top-full right-0 mt-1 bg-background border border-border shadow-xl p-1 rounded-md w-24 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
               {['bn', 'en', 'es', 'fr'].map((lang) => (
                 <button
                   key={lang}
@@ -268,7 +268,7 @@ export function Header({
                     parts[1] = lang
                     router.push(parts.join('/') || `/${lang}`)
                   }}
-                  className="w-full text-left px-3 py-1.5 text-[11px] font-medium text-gray-900 hover:bg-card transition-colors uppercase"
+                  className="w-full text-left px-3 py-1.5 text-[11px] font-medium text-gray-900 hover:bg-card transition-colors uppercase rounded-sm"
                 >
                   {lang === 'bn' ? 'বাংলা' : lang}
                 </button>
@@ -291,7 +291,7 @@ export function Header({
           {/* Search */}
           <form
             onSubmit={handleDesktopSearch}
-            className="flex-1 max-w-md flex items-center border border-border overflow-hidden bg-card focus-within:bg-background focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-300 transition-all"
+            className="flex-1 max-w-md flex items-center border border-border rounded-md overflow-hidden bg-card focus-within:bg-background focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-300 transition-all"
           >
             <div className="relative flex-shrink-0" ref={catRef}>
               <button
@@ -303,7 +303,7 @@ export function Header({
                 <ChevronDown className="w-3.5 h-3.5" />
               </button>
               {isCatOpen && (
-                <div className="absolute top-full left-0 mt-1 bg-background border border-border shadow-lg overflow-hidden z-50 min-w-[120px]">
+                <div className="absolute top-full left-0 mt-1 bg-background border border-border shadow-lg rounded-md overflow-hidden z-50 min-w-[120px]">
                   {SEARCH_CATEGORIES.map((cat) => (
                     <button
                       key={cat.key}
@@ -344,17 +344,17 @@ export function Header({
           {/* Actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
-              className="relative w-9 h-9 flex items-center justify-center border border-border text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
+              className="relative w-9 h-9 flex items-center justify-center border border-border text-muted-foreground hover:bg-card hover:text-foreground transition-colors rounded-md"
               aria-label={isBn ? 'বিজ্ঞপ্তি' : 'Notifications'}
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 border border-white" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white" />
             </button>
 
             {session?.user ? (
               <div className="flex items-center gap-2">
                 <Link href={`/${locale}/dashboard`}>
-                  <div className="w-8 h-8 bg-primary flex items-center justify-center text-primary-foreground text-xs font-semibold hover:ring-2 hover:ring-gray-300 transition-all">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-semibold hover:ring-2 hover:ring-gray-300 transition-all">
                     {session.user.name?.charAt(0).toUpperCase() ??
                       session.user.email?.charAt(0).toUpperCase() ??
                       'U'}
@@ -365,13 +365,13 @@ export function Header({
               <div className="flex items-center gap-2">
                 <Link
                   href={`/${locale}/auth/signin`}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-foreground transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-foreground transition-colors rounded-md"
                 >
                   {isBn ? 'সাইন ইন' : 'Sign in'}
                 </Link>
                 <Link
                   href={`/${locale}/auth/signup`}
-                  className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium hover:bg-gray-700 transition-colors"
+                  className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium hover:bg-gray-700 transition-colors rounded-md"
                 >
                   {isBn ? 'শুরু করুন' : 'Get started'}
                 </Link>
@@ -392,7 +392,7 @@ export function Header({
                 <Link
                   key={href}
                   href={localizedHref}
-                  className={`relative flex items-center gap-2 px-3 py-1.5 text-sm font-semibold transition-all ${
+                  className={`relative flex items-center gap-2 px-3 py-1.5 text-sm font-semibold transition-all rounded-md ${
                     isActive
                       ? 'bg-slate-100 text-slate-900'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -463,7 +463,7 @@ export function Header({
                 setIsMenuOpen((prev) => !prev)
                 setIsSearchOpen(false)
               }}
-              className="p-2 -ml-2 text-gray-900 hover:bg-card transition-colors"
+              className="p-2 -ml-2 text-gray-900 hover:bg-card transition-colors rounded-md"
               aria-label={isMenuOpen ? (isBn ? 'মেনু বন্ধ করুন' : 'Close menu') : (isBn ? 'মেনু খুলুন' : 'Open menu')}
             >
               {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -481,7 +481,7 @@ export function Header({
                 setIsSearchOpen(!isSearchOpen)
                 setIsMenuOpen(false)
               }}
-              className="w-9 h-9 flex items-center justify-center text-gray-900 hover:bg-card transition-colors"
+              className="w-9 h-9 flex items-center justify-center text-gray-900 hover:bg-card transition-colors rounded-md"
               aria-label={isBn ? 'খুঁজুন' : 'Search'}
             >
               {isSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
@@ -494,7 +494,7 @@ export function Header({
           <div className="px-4 pb-3 border-t border-border pt-2">
             <form
               onSubmit={handleSearch}
-              className="flex items-center border border-gray-300 overflow-hidden bg-card focus-within:bg-background focus-within:border-gray-400 transition-all"
+              className="flex items-center border border-gray-300 rounded-md overflow-hidden bg-card focus-within:bg-background focus-within:border-gray-400 transition-all"
             >
               <input
                 type="text"
@@ -656,7 +656,7 @@ export function Header({
                   handleSignOut()
                   setIsMenuOpen(false)
                 }}
-                className="flex-1 h-11 text-sm font-medium text-stone-700 border border-stone-300 hover:bg-stone-100 transition-colors"
+                className="flex-1 h-11 text-sm font-medium text-stone-700 border border-stone-300 rounded-md hover:bg-stone-100 transition-colors"
               >
                 {isBn ? 'সাইন আউট' : 'Sign out'}
               </button>
@@ -665,14 +665,14 @@ export function Header({
                 <Link
                   href={`/${locale}/auth/signin`}
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex-1 h-11 flex items-center justify-center text-sm font-medium text-stone-900 border border-stone-300 hover:bg-stone-100 transition-colors"
+                  className="flex-1 h-11 flex items-center justify-center text-sm font-medium text-stone-900 border border-stone-300 rounded-md hover:bg-stone-100 transition-colors"
                 >
                   {isBn ? 'সাইন ইন' : 'Sign in'}
                 </Link>
                 <Link
                   href={`/${locale}/auth/signup`}
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex-1 h-11 flex items-center justify-center text-sm font-medium text-stone-50 bg-red-700 hover:bg-red-800 transition-colors"
+                  className="flex-1 h-11 flex items-center justify-center text-sm font-medium text-stone-50 bg-red-700 hover:bg-red-800 rounded-md transition-colors"
                 >
                   {isBn ? 'শুরু করুন' : 'Get started'}
                 </Link>

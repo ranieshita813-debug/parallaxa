@@ -42,7 +42,7 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
-function CoverFlowSlider({ articles, locale = 'bn' }: { articles: NewsArticle[], locale?: string }) {
+function CoverFlowSlider({ articles, locale = 'bn', className = '' }: { articles: NewsArticle[], locale?: string, className?: string }) {
   const displayArticles = articles.slice(0, 6)
   const total = displayArticles.length
   const [current, setCurrent] = useState(0)
@@ -140,7 +140,7 @@ function CoverFlowSlider({ articles, locale = 'bn' }: { articles: NewsArticle[],
   const activeTitle = displayArticles[current]?.title ?? ''
 
   return (
-    <div className="md:hidden">
+    <div className={className}>
       {/* Progress bar */}
       <div className="h-0.5 bg-gray-200 mx-4 overflow-hidden mb-1">
         <div
@@ -208,7 +208,7 @@ function CoverFlowSlider({ articles, locale = 'bn' }: { articles: NewsArticle[],
               goTo(current - 1)
               startAuto()
             }}
-            className="w-9 h-9 border border-gray-200 flex items-center justify-center hover:bg-slate-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+            className="w-9 h-9 border border-gray-200 rounded-full flex items-center justify-center hover:bg-slate-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
             aria-label="Previous slide"
           >
             <span className="block w-2 h-2 border-r border-b border-gray-500 rotate-[135deg] translate-x-px" />
@@ -225,7 +225,7 @@ function CoverFlowSlider({ articles, locale = 'bn' }: { articles: NewsArticle[],
                 }}
                 aria-label={`Go to slide ${i + 1}`}
                 aria-current={i === current}
-                className={`transition-all duration-300 ${
+                className={`transition-all duration-300 rounded-full ${
                   i === current ? 'w-4 h-1.5 bg-slate-900' : 'w-1.5 h-1.5 bg-slate-300'
                 }`}
               />
@@ -238,7 +238,7 @@ function CoverFlowSlider({ articles, locale = 'bn' }: { articles: NewsArticle[],
               goTo(current + 1)
               startAuto()
             }}
-            className="w-9 h-9 border border-gray-200 flex items-center justify-center hover:bg-slate-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+            className="w-9 h-9 border border-gray-200 rounded-full flex items-center justify-center hover:bg-slate-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
             aria-label="Next slide"
           >
             <span className="block w-2 h-2 border-r border-b border-gray-500 -rotate-45 -translate-x-px" />
@@ -290,7 +290,7 @@ export default function HomeClient({ sections = [] }: HomeClientProps) {
             </p>
             <Link
               href={`/${locale}/write`}
-              className="mt-2 bg-slate-900 text-white px-6 py-2.5 font-semibold hover:bg-slate-800 transition-colors"
+              className="mt-2 bg-slate-900 text-white px-6 py-2.5 rounded-md font-semibold hover:bg-slate-800 transition-colors"
             >
               {isBn ? 'নতুন নিবন্ধ লিখুন' : 'Write new article'}
             </Link>
@@ -314,7 +314,7 @@ export default function HomeClient({ sections = [] }: HomeClientProps) {
                   </h2>
                 </div>
 
-                <CoverFlowSlider articles={section.articles} locale={locale} />
+                <CoverFlowSlider articles={section.articles} locale={locale} className="md:hidden" />
 
                 {section.articles.length >= 4 ? (
                   <div
@@ -399,13 +399,7 @@ export default function HomeClient({ sections = [] }: HomeClientProps) {
                   </h2>
                 </div>
 
-                <CoverFlowSlider articles={section.articles} locale={locale} />
-
-                <div className="hidden md:grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                  {section.articles.map((article) => (
-                    <NewsCard key={article.id} article={article} variant="default" locale={locale} />
-                  ))}
-                </div>
+                <CoverFlowSlider articles={section.articles} locale={locale} className="w-full" />
               </section>
             )
           }

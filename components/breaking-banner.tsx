@@ -37,7 +37,7 @@ export function BreakingBanner() {
           <div className="flex items-center justify-between gap-4 py-3 cursor-pointer group">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="flex-shrink-0">
-                <span className="inline-block bg-red-600 text-white px-2.5 py-1 font-bold text-xs uppercase tracking-wider animate-pulse">
+                <span className="inline-block bg-red-600 text-white px-2.5 py-1 font-bold text-xs uppercase tracking-wider animate-pulse rounded-sm">
                   {isBn ? 'ব্রেকিং' : 'BREAKING'}
                 </span>
               </div>
@@ -57,7 +57,7 @@ export function BreakingBanner() {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 transition-all ${
+                className={`w-2 h-2 transition-all rounded-full ${
                   index === currentIndex ? 'bg-white w-6' : 'bg-red-300'
                 }`}
                 aria-label={`Breaking news ${index + 1}`}
