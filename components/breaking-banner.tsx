@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { NewsArticle, getBreakingNews } from '@/lib/db/articles'
 import { ChevronRight } from 'lucide-react'
 
 export function BreakingBanner() {
-  const [breakingArticles, setBreakingArticles] = useState < NewsArticle[] > ([])
+  const [breakingArticles, setBreakingArticles] = useState<NewsArticle[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  
+  const params = useParams()
+  const locale = (params?.locale as string) || 'bn'
+  const isBn = locale === 'bn' || !locale
+
   useEffect(() => {
     async function load() {
       const articles = await getBreakingNews()
@@ -16,25 +20,25 @@ export function BreakingBanner() {
     }
     load()
   }, [])
-  
+
   if (breakingArticles.length === 0) return null
-  
+
   const currentArticle = breakingArticles[currentIndex]
   if (!currentArticle) return null
-  
+
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % breakingArticles.length)
   }
-  
+
   return (
     <div className="bg-black text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link href={`/article/${currentArticle.slug || currentArticle.id}`}>
+        <Link href={`/${locale}/article/${currentArticle.slug || currentArticle.id}`}>
           <div className="flex items-center justify-between gap-4 py-3 cursor-pointer group">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="flex-shrink-0">
-                <span className="inline-block bg-black text-white px-2.5 py-1 rounded font-bold text-xs animate-pulse">
-                  BREAKING
+                <span className="inline-block bg-red-600 text-white px-2.5 py-1 font-bold text-xs uppercase tracking-wider animate-pulse">
+                  {isBn ? 'ব্রেকিং' : 'BREAKING'}
                 </span>
               </div>
               <h3 className="text-sm sm:text-base font-semibold truncate group-hover:underline">
@@ -53,7 +57,7 @@ export function BreakingBanner() {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
+                className={`w-2 h-2 transition-all ${
                   index === currentIndex ? 'bg-white w-6' : 'bg-red-300'
                 }`}
                 aria-label={`Breaking news ${index + 1}`}
@@ -63,7 +67,7 @@ export function BreakingBanner() {
               onClick={goToNext}
               className="ml-auto text-xs font-medium hover:underline"
             >
-              Next
+              {isBn ? 'পরবর্তী' : 'Next'}
             </button>
           </div>
         )}

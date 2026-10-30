@@ -1,26 +1,24 @@
 'use client'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { NewsCard } from '@/components/news-card'
 import { NewsArticle } from '@/lib/db/articles'
-import {
-  House,
-  Globe,
-  Cpu,
-  Briefcase,
-  Trophy,
-  Flask,
-  Pulse,
-  ChatTeardropText,
-  NotePencil,
-  Sparkle,
-  TrendUp
-} from '@phosphor-icons/react/ssr'
+import { Sparkle } from '@phosphor-icons/react/ssr'
 
-// Each entry: horizontal offset, scale, opacity, stacking order, and a
-// shadow that deepens as a card approaches the center (z index 30 = focused).
+const SECTION_TITLE_TRANSLATIONS: Record<string, string> = {
+  'Latest News': 'সর্বশেষ সংবাদ',
+  'World News': 'বিশ্ব সংবাদ',
+  'Technology': 'প্রযুক্তি',
+  'Business': 'ব্যবসা ও বাণিজ্য',
+  'Sports': 'খেলাধুলা',
+  'Science': 'বিজ্ঞান',
+  'Health': 'স্বাস্থ্য',
+  'Opinion': 'মতামত',
+  'Featured News': 'বিশেষ সংবাদ',
+  'Trending News': 'ট্রেন্ডিং সংবাদ',
+}
+
 const POSITIONS = [
   { x: 0, scale: 1, opacity: 1, z: 30, shadow: '0 20px 40px -12px rgba(15,23,42,0.35)' },
   { x: 210, scale: 0.82, opacity: 0.55, z: 20, shadow: '0 10px 24px -10px rgba(15,23,42,0.25)' },
@@ -29,7 +27,7 @@ const POSITIONS = [
 ]
 
 const HIDDEN_POSITION = { x: 0, scale: 0.5, opacity: 0, z: 0, shadow: 'none' }
-const SWIPE_FRACTION = 0.18 // fraction of stage width needed to trigger a slide change
+const SWIPE_FRACTION = 0.18
 const AUTOPLAY_MS = 4000
 
 function usePrefersReducedMotion() {
@@ -44,7 +42,7 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
-function CoverFlowSlider({ articles }: { articles: NewsArticle[] }) {
+function CoverFlowSlider({ articles, locale = 'bn' }: { articles: NewsArticle[], locale?: string }) {
   const displayArticles = articles.slice(0, 6)
   const total = displayArticles.length
   const [current, setCurrent] = useState(0)
@@ -94,7 +92,6 @@ function CoverFlowSlider({ articles }: { articles: NewsArticle[] }) {
     return () => stopAuto()
   }, [startAuto, stopAuto])
 
-  // Pause when the tab isn't visible so we're not animating off-screen.
   useEffect(() => {
     const handleVisibility = () => setIsPaused(document.hidden)
     document.addEventListener('visibilitychange', handleVisibility)
@@ -145,14 +142,13 @@ function CoverFlowSlider({ articles }: { articles: NewsArticle[] }) {
   return (
     <div className="md:hidden">
       {/* Progress bar */}
-      <div className="h-0.5 bg-gray-200 mx-4 rounded-full overflow-hidden mb-1">
+      <div className="h-0.5 bg-gray-200 mx-4 overflow-hidden mb-1">
         <div
-          className="h-full bg-slate-900 rounded-full transition-all duration-400"
+          className="h-full bg-slate-900 transition-all duration-400"
           style={{ width: `${((current + 1) / total) * 100}%` }}
         />
       </div>
 
-      {/* Screen-reader announcement of the active slide */}
       <span className="sr-only" role="status" aria-live="polite">
         {`স্লাইড ${current + 1} এর ${total}: ${activeTitle}`}
       </span>
@@ -164,19 +160,15 @@ function CoverFlowSlider({ articles }: { articles: NewsArticle[] }) {
         aria-roledescription="carousel"
         tabIndex={total > 1 ? 0 : -1}
         onKeyDown={handleKeyDown}
-        className="relative h-[220px] flex items-center justify-center overflow-hidden touch-pan-y select-none outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 rounded-xl"
+        className="relative h-[220px] flex items-center justify-center overflow-hidden touch-pan-y select-none outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
       >
-        {/* Edge fades so off-stage cards feel like they recede rather than clip */}
-       
         {displayArticles.map((article, i) => {
           const p = getPos(i)
           const isFocused = p.z === 30
-          // While dragging, every visible card pans with the finger for a 1:1 feel;
-          // on release it snaps back into its resting position.
           const liveX = isDragging ? p.x + dragX : p.x
           return (
             <div
@@ -198,10 +190,10 @@ function CoverFlowSlider({ articles }: { articles: NewsArticle[] }) {
                   : 'transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.4s ease, box-shadow 0.4s ease',
                 pointerEvents: p.opacity === 0 ? 'none' : 'auto',
               }}
-              className="absolute h-full rounded-xl w-80 overflow-hidden bg-background cursor-pointer"
+              className="absolute h-full w-80 overflow-hidden bg-background cursor-pointer"
               aria-hidden={!isFocused}
             >
-              <NewsCard article={article} variant="featured" className="h-full" />
+              <NewsCard article={article} variant="featured" className="h-full" locale={locale} />
             </div>
           )
         })}
@@ -216,13 +208,12 @@ function CoverFlowSlider({ articles }: { articles: NewsArticle[] }) {
               goTo(current - 1)
               startAuto()
             }}
-            className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-slate-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+            className="w-9 h-9 border border-gray-200 flex items-center justify-center hover:bg-slate-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
             aria-label="Previous slide"
           >
             <span className="block w-2 h-2 border-r border-b border-gray-500 rotate-[135deg] translate-x-px" />
           </button>
 
-          {/* Dot indicators give an at-a-glance sense of position for small totals */}
           <div className="flex items-center gap-1.5">
             {displayArticles.map((article, i) => (
               <button
@@ -234,7 +225,7 @@ function CoverFlowSlider({ articles }: { articles: NewsArticle[] }) {
                 }}
                 aria-label={`Go to slide ${i + 1}`}
                 aria-current={i === current}
-                className={`rounded-full transition-all duration-300 ${
+                className={`transition-all duration-300 ${
                   i === current ? 'w-4 h-1.5 bg-slate-900' : 'w-1.5 h-1.5 bg-slate-300'
                 }`}
               />
@@ -247,7 +238,7 @@ function CoverFlowSlider({ articles }: { articles: NewsArticle[] }) {
               goTo(current + 1)
               startAuto()
             }}
-            className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-slate-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+            className="w-9 h-9 border border-gray-200 flex items-center justify-center hover:bg-slate-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
             aria-label="Next slide"
           >
             <span className="block w-2 h-2 border-r border-b border-gray-500 -rotate-45 -translate-x-px" />
@@ -271,88 +262,90 @@ interface HomeClientProps {
 }
 
 export default function HomeClient({ sections = [] }: HomeClientProps) {
-  const NAV_LINKS = [
-    { href: '/', label: 'Home', icon: House },
-    { href: '/category/World', label: 'World', icon: Globe },
-    { href: '/category/Technology', label: 'Technology', icon: Cpu },
-    { href: '/category/Business', label: 'Business', icon: Briefcase },
-    { href: '/category/Sports', label: 'Sports', icon: Trophy },
-    { href: '/category/Science', label: 'Science', icon: Flask },
-    { href: '/category/Health', label: 'Health', icon: Pulse },
-    { href: '/category/Opinion', label: 'Opinion', badge: 'New', icon: ChatTeardropText },
-  ]
   const pathname = usePathname()
-  const { data: session } = useSession()
   const locale = pathname.split('/')[1] || 'bn'
+  const isBn = locale === 'bn' || !locale
   const hasArticles = sections && sections.some(s => s.articles && s.articles.length > 0)
+
+  const translateTitle = (title: string) => {
+    if (!isBn) return title
+    return SECTION_TITLE_TRANSLATIONS[title] || title
+  }
 
   return (
     <div className="flex flex-col items-start justify-between gap-2 w-full h-auto">
-
-
       <main className="flex-grow w-full">
         {!hasArticles && (
           <div className="w-full max-w-4xl mx-auto px-4 py-20 text-center flex flex-col items-center justify-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+            <div className="w-16 h-16 bg-slate-100 flex items-center justify-center text-slate-400">
               <Sparkle size={32} />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800">কোনো প্রকাশিত নিবন্ধ পাওয়া যায়নি</h2>
-            <p className="text-slate-500 max-w-md">নিবন্ধ দেখতে অনুগ্রহ করে প্রথমে ড্যাশবোর্ড থেকে বা "Write" পেজে গিয়ে নতুন নিবন্ধ তৈরি করুন এবং সেটি পাবলিশ করুন।</p>
+            <h2 className="text-2xl font-bold text-slate-800">
+              {isBn ? 'কোনো প্রকাশিত নিবন্ধ পাওয়া যায়নি' : 'No articles published yet'}
+            </h2>
+            <p className="text-slate-500 max-w-md">
+              {isBn
+                ? 'নিবন্ধ দেখতে অনুগ্রহ করে ড্যাশবোর্ড বা "লিখুন" পেজে গিয়ে নতুন নিবন্ধ তৈরি করে পাবলিশ করুন।'
+                : 'Please create and publish a new article from the Dashboard or Write page.'}
+            </p>
             <Link
               href={`/${locale}/write`}
-              className="mt-2 bg-slate-900 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-slate-800 transition-colors"
+              className="mt-2 bg-slate-900 text-white px-6 py-2.5 font-semibold hover:bg-slate-800 transition-colors"
             >
-              নতুন নিবন্ধ লিখুন
+              {isBn ? 'নতুন নিবন্ধ লিখুন' : 'Write new article'}
             </Link>
           </div>
         )}
 
-        {sections.map((section, idx) => {
+        {sections.map((section) => {
           if (!section.articles || section.articles.length === 0) return null
+
+          const sectionTitle = translateTitle(section.title)
 
           // Rendering standard grid layout
           if (section.layout === 'grid') {
-            const [mostRecent, second, third, fourth, ...others] = section.articles;
+            const [mostRecent, second, third, fourth] = section.articles
 
             return (
-              <section key={section.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-foreground">{section.title}</h2>
+              <section key={section.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
+                <div className="flex items-center justify-between mb-6 pb-2 border-b border-gray-200">
+                  <h2 className="text-2xl font-extrabold text-foreground tracking-tight border-l-4 border-red-600 pl-3">
+                    {sectionTitle}
+                  </h2>
                 </div>
 
-                <CoverFlowSlider articles={section.articles} />
+                <CoverFlowSlider articles={section.articles} locale={locale} />
 
-                {/* If we have at least 4 articles, render the beautiful customized grid */}
                 {section.articles.length >= 4 ? (
                   <div
-                    className="hidden md:grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-12"
-                    style={{ gridTemplateRows: 'repeat(2, minmax(260px, auto))' }}
+                    className="hidden md:grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-12"
+                    style={{ gridTemplateRows: 'repeat(2, minmax(250px, auto))' }}
                   >
                     {mostRecent && (
                       <div className="col-span-1 md:col-span-2 lg:col-span-7 lg:row-span-2 md:h-[260px] lg:h-auto">
-                        <NewsCard article={mostRecent} variant="featured" className="h-full" />
+                        <NewsCard article={mostRecent} variant="featured" className="h-full" locale={locale} />
                       </div>
                     )}
                     {second && (
                       <div className="col-span-1 lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:h-auto">
-                        <NewsCard article={second} variant="featured" className="h-full" />
+                        <NewsCard article={second} variant="featured" className="h-full" locale={locale} />
                       </div>
                     )}
                     {third && (
                       <div className="col-span-1 lg:col-span-2 lg:col-start-8 lg:row-start-2 lg:h-auto">
-                        <NewsCard article={third} variant="featured" className="h-full" />
+                        <NewsCard article={third} variant="featured" className="h-full" locale={locale} />
                       </div>
                     )}
                     {fourth && (
                       <div className="col-span-1 lg:col-span-3 lg:col-start-10 lg:row-start-2 lg:h-auto">
-                        <NewsCard article={fourth} variant="featured" className="h-full" />
+                        <NewsCard article={fourth} variant="featured" className="h-full" locale={locale} />
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="hidden md:grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="hidden md:grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {section.articles.map((article) => (
-                      <NewsCard key={article.id} article={article} variant="default" />
+                      <NewsCard key={article.id} article={article} variant="default" locale={locale} />
                     ))}
                   </div>
                 )}
@@ -363,29 +356,29 @@ export default function HomeClient({ sections = [] }: HomeClientProps) {
           // Rendering list layout
           if (section.layout === 'list') {
             return (
-              <section key={section.id} className="py-12 pt-4">
+              <section key={section.id} className="py-8 pt-2">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
-                      <div className="flex items-center justify-between mb-4 pb-4 border-b">
-                        <h2 className="text-2xl font-bold text-foreground">{section.title}</h2>
-                        {
-                          section.articles.length && (
-                        <Link href = '/' className='flex items-center justify-end gap-2'>
-                          <h5>See More</h5>
-                        </Link>
-                          )
-                        }
-                        
+                      <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+                        <h2 className="text-2xl font-extrabold text-foreground tracking-tight border-l-4 border-red-600 pl-3">
+                          {sectionTitle}
+                        </h2>
+                        {section.articles.length > 0 && (
+                          <Link href={`/${locale}`} className="text-xs font-bold text-red-600 hover:underline">
+                            {isBn ? 'আরও দেখুন →' : 'See More →'}
+                          </Link>
+                        )}
                       </div>
 
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         {section.articles.map((article) => (
                           <NewsCard
                             key={article.id ?? 'null'}
                             article={article}
                             variant="horizontal"
-                            className="my-2"
+                            className="my-1 border-b border-gray-100 pb-3"
+                            locale={locale}
                           />
                         ))}
                       </div>
@@ -399,16 +392,18 @@ export default function HomeClient({ sections = [] }: HomeClientProps) {
           // Rendering slider layout
           if (section.layout === 'slider') {
             return (
-              <section key={section.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-foreground">{section.title}</h2>
+              <section key={section.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
+                <div className="flex items-center justify-between mb-6 pb-2 border-b border-gray-200">
+                  <h2 className="text-2xl font-extrabold text-foreground tracking-tight border-l-4 border-red-600 pl-3">
+                    {sectionTitle}
+                  </h2>
                 </div>
 
-                <CoverFlowSlider articles={section.articles} />
+                <CoverFlowSlider articles={section.articles} locale={locale} />
 
-                <div className="hidden md:grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                <div className="hidden md:grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {section.articles.map((article) => (
-                    <NewsCard key={article.id} article={article} variant="default" />
+                    <NewsCard key={article.id} article={article} variant="default" locale={locale} />
                   ))}
                 </div>
               </section>

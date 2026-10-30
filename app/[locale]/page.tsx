@@ -5,7 +5,14 @@ import { getHomeSections } from '@/lib/db/sections';
 import { getLatestArticles, getArticlesByCategory as getHomeArticlesByCategory } from '@/lib/db/home';
 import { getFeaturedArticles, getTrendingArticles } from '@/lib/db/articles';
 
-export default async function HomePage() {
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const isBn = locale === 'bn' || !locale;
+
   let dbSections: any[] = [];
   
   try {
@@ -19,7 +26,7 @@ export default async function HomePage() {
     dbSections = [
       {
         id: 1,
-        title: 'Latest News',
+        title: isBn ? 'সর্বশেষ সংবাদ' : 'Latest News',
         type: 'latest',
         layout: 'grid',
         limit_count: 6,
@@ -28,7 +35,7 @@ export default async function HomePage() {
       },
       {
         id: 2,
-        title: 'World News',
+        title: isBn ? 'বিশ্ব সংবাদ' : 'World News',
         type: 'category',
         category_id: 7, // World
         layout: 'list',
@@ -38,7 +45,7 @@ export default async function HomePage() {
       },
       {
         id: 3,
-        title: 'Technology',
+        title: isBn ? 'প্রযুক্তি' : 'Technology',
         type: 'category',
         category_id: 2, // Technology
         layout: 'list',

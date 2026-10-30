@@ -1,14 +1,15 @@
 
-> my-project@0.1.0 dev
+> my-project@0.1.0 dev /app
 > next dev
 
 ▲ Next.js 16.2.10 (Turbopack)
 - Local:         http://localhost:3000
 - Network:       http://192.168.0.2:3000
-✓ Ready in 543ms
+✓ Ready in 570ms
 
 ○ Compiling /[locale] ...
- GET /bn 200 in 8.0s (next.js: 7.3s, proxy.ts: 7ms, application-code: 722ms)
+ HEAD /bn 200 in 8.5s (next.js: 7.4s, proxy.ts: 362ms, application-code: 721ms)
+ GET /bn 200 in 172ms (next.js: 43ms, proxy.ts: 10ms, application-code: 118ms)
 [browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
 
 - A server/client branch `if (typeof window !== 'undefined')`.
@@ -40,7 +41,7 @@ https://react.dev/link/hydration-mismatch
                         <RootLayout>
                           <html
                             lang="en"
--                           className="sansfont_73c76f14-module__a3oNSq__variable seriffont_16e6a275-module__B082uq__v..."
+-                           className="sansfont_228c136c-module__NWsybW__variable seriffont_a43adbd8-module__FPD0lW__v..."
                           >
                             <body
 -                             className="antialiased bg-background text-foreground"
@@ -80,114 +81,22 @@ https://react.dev/link/hydration-mismatch
                             <html
 +                             lang="bn"
 -                             lang="en"
-                              className="sansfont_73c76f14-module__a3oNSq__variable seriffont_16e6a275-module__B082uq_..."
+                              className="sansfont_228c136c-module__NWsybW__variable seriffont_a43adbd8-module__FPD0lW_..."
                             >
                       ...
       ...
 
- GET /api/public-settings 200 in 1351ms (next.js: 1325ms, application-code: 26ms)
+ GET /api/public-settings 200 in 980ms (next.js: 956ms, application-code: 24ms)
 [31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_1wpnri1._.js:513:16)
-    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_1wpnri1._.js:5344:202)
-[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_0gltlle._.js:513:16)
-    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_0gltlle._.js:5344:204)
+    at assertConfig (/app/.next/dev/server/chunks/1423_@auth_core_1ffa9dw._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/1423_@auth_core_1ffa9dw._.js:5344:264)
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:40131)
- GET /api/auth/session 500 in 2.6s (next.js: 2.5s, application-code: 19ms)
+    at async AppRouteRouteModule.do (/app/node_modules/.pnpm/next@16.2.10_@babel+core@7.29.7_@opentelemetry+api@1.9.1_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:40131)
+ GET /api/auth/session 500 in 2.5s (next.js: 2.5s, application-code: 14ms)
 [31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_0gltlle._.js:513:16)
-    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_0gltlle._.js:5344:204)
-    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:40131)
- GET /api/auth/session 500 in 106ms (next.js: 87ms, application-code: 19ms)
+    at assertConfig (/app/.next/dev/server/chunks/1423_@auth_core_1ffa9dw._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/1423_@auth_core_1ffa9dw._.js:5344:264)
+    at async AppRouteRouteModule.do (/app/node_modules/.pnpm/next@16.2.10_@babel+core@7.29.7_@opentelemetry+api@1.9.1_react-dom@19.2.7_react@19.2.7__react@19.2.7/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:40131)
+ GET /api/auth/session 500 in 41ms (next.js: 33ms, application-code: 8ms)
 [browser] ClientFetchError: There was a problem with the server configuration. Check the server logs for more information.. Read more at https://errors.authjs.dev#autherror
-[browser] ClientFetchError: There was a problem with the server configuration. Check the server logs for more information.. Read more at https://errors.authjs.dev#autherror
- GET /bn/auth/signin?callbackUrl=%2Fbn%2Fdashboard 200 in 1891ms (next.js: 1728ms, proxy.ts: 18ms, application-code: 144ms)
-[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
-
-- A server/client branch `if (typeof window !== 'undefined')`.
-- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
-- Date formatting in a user's locale which doesn't match the server.
-- External changing data without sending a snapshot of it along with the HTML.
-- Invalid HTML tag nesting.
-
-It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
-
-https://react.dev/link/hydration-mismatch
-
-  ...
-    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
-      <AppDevOverlayErrorBoundary globalError={[...]}>
-        <ReplaySsrOnlyErrors>
-        <DevRootHTTPAccessFallbackBoundary>
-          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
-            <HTTPAccessFallbackErrorBoundary pathname="/bn/auth/s..." notFound={<NotAllowedRootHTTPFallbackError>} ...>
-              <RedirectBoundary>
-                <RedirectErrorBoundary router={{...}}>
-                  <Head>
-                  <__next_root_layout_boundary__>
-                    <LoadingBoundaryProvider loading={[...]}>
-                      <SegmentViewNode type="layout" pagePath="layout.tsx">
-                        <SegmentTrieNode>
-                        <script>
-                        <script>
-                        <RootLayout>
-                          <html
-                            lang="en"
--                           className="sansfont_73c76f14-module__a3oNSq__variable seriffont_16e6a275-module__B082uq__v..."
-                          >
-                            <body
--                             className="antialiased bg-background text-foreground"
-                            >
-                  ...
-
-[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_0gltlle._.js:513:16)
-    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_0gltlle._.js:5344:204)
-    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:40131)
- GET /api/auth/session 500 in 21ms (next.js: 5ms, application-code: 15ms)
-[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
-
-- A server/client branch `if (typeof window !== 'undefined')`.
-- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
-- Date formatting in a user's locale which doesn't match the server.
-- External changing data without sending a snapshot of it along with the HTML.
-- Invalid HTML tag nesting.
-
-It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
-
-https://react.dev/link/hydration-mismatch
-
-  ...
-    <InnerScrollAndFocusHandlerOld focusAndScrollRef={{scrollRef:null, ...}} cacheNode={{rsc:{...}, ...}}>
-      <ErrorBoundary errorComponent={function GlobalError} errorStyles={{...}} errorScripts={[...]}>
-        <ErrorBoundaryHandler pathname="/bn/auth/s..." errorComponent={function GlobalError} errorStyles={{...}} ...>
-          <LoadingBoundary name="/" loading={[...]}>
-            <Suspense name="/" fallback={<Fragment>}>
-              <HTTPAccessFallbackBoundary notFound={{...}} forbidden={undefined} unauthorized={undefined}>
-                <HTTPAccessFallbackErrorBoundary pathname="/bn/auth/s..." notFound={{...}} forbidden={undefined} ...>
-                  <RedirectBoundary>
-                    <RedirectErrorBoundary router={{...}}>
-                      <InnerLayoutRouter url="/bn/auth/s..." tree={[...]} params={{locale:"bn"}} ...>
-                        <SegmentViewNode type="layout" pagePath="[locale]/l...">
-                          <SegmentTrieNode>
-                          <link>
-                          <script>
-                          <script>
-                          <script>
-                          <RootLayout>
-                            <html
-+                             lang="bn"
--                             lang="en"
-                              className="sansfont_73c76f14-module__a3oNSq__variable seriffont_16e6a275-module__B082uq_..."
-                            >
-                      ...
-      ...
-
-[browser] ClientFetchError: There was a problem with the server configuration. Check the server logs for more information.. Read more at https://errors.authjs.dev#autherror
-[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
-    at assertConfig (/app/.next/dev/server/chunks/node_modules_@auth_core_0gltlle._.js:513:16)
-    at Auth (/app/.next/dev/server/chunks/node_modules_@auth_core_0gltlle._.js:5344:204)
-    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:40131)
- GET /api/auth/session 500 in 22ms (next.js: 10ms, application-code: 11ms)
 [browser] ClientFetchError: There was a problem with the server configuration. Check the server logs for more information.. Read more at https://errors.authjs.dev#autherror
