@@ -1,5 +1,5 @@
 import React from 'react'
-import { Info, AlertTriangle, CheckCircle2, XCircle, TrendingUp, Book, StickyNote } from 'lucide-react'
+import { Info, AlertTriangle, CheckCircle2, XCircle, TrendingUp, Book, StickyNote, ExternalLink } from 'lucide-react'
 
 interface CustomBlockProps {
   className: string
@@ -196,21 +196,52 @@ export const customBlockComponents = {
       </div>
     )
   },
-  reference: (props: any) => (
-    <div className="my-4 p-4 bg-gray-50 border border-gray-100 rounded-none flex items-start gap-3">
-      <Book size={16} className="text-gray-400 mt-1 shrink-0" />
-      <div className="text-xs text-gray-600 italic">
-        <span className="font-bold text-gray-900 not-italic">{props.author}</span> {props.year ? `(${props.year})` : ''}.
-        {props.url ? (
-          <a href={props.url} target="_blank" rel="noopener noreferrer" className="mx-1 text-blue-600 hover:underline">
-            {props.text}
-          </a>
-        ) : (
-          <span className="mx-1">{props.text}</span>
-        )}
+  reference: (props: any) => {
+    const title = props.text || props.title || 'রেফারেন্স / Reference'
+    const author = props.author || ''
+    const year = props.year || ''
+    const site = props.site || props.siteName || ''
+    const description = props.description || ''
+    const url = props.url || ''
+
+    return (
+      <div className="my-4 rounded-xl border border-neutral-200 bg-neutral-50/80 p-3.5 transition-colors hover:border-neutral-300">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 shadow-xs">
+            <Book size={14} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500 mb-1">
+              <span className="font-semibold text-neutral-800">{author || site || 'সূত্র / Source'}</span>
+              {year && <span>• ({year})</span>}
+              {site && author && <span>• {site}</span>}
+            </div>
+            {url ? (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-1.5 text-sm font-semibold text-neutral-900 transition-colors hover:text-blue-700 hover:underline"
+              >
+                <span className="line-clamp-2">{title}</span>
+                <ExternalLink size={12} className="shrink-0 text-neutral-400 group-hover:text-blue-700" />
+              </a>
+            ) : (
+              <p className="text-sm font-semibold text-neutral-900 line-clamp-2">{title}</p>
+            )}
+            {description && (
+              <p className="mt-1 line-clamp-2 text-xs text-neutral-600 leading-relaxed">{description}</p>
+            )}
+            {url && (
+              <p className="mt-1.5 truncate text-[11px] font-mono text-neutral-400">
+                {url}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  ),
+    )
+  },
   tika: (props: any) => (
     <div className="my-4 p-4 bg-yellow-50/50 border-l-4 border-yellow-400 rounded-none flex items-start gap-3">
       <StickyNote size={16} className="text-yellow-600 mt-1 shrink-0" />
