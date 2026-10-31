@@ -241,12 +241,31 @@ export async function getArticlesByDate(dateString: string): Promise<NewsArticle
 
 export async function searchArticles(query: string): Promise<NewsArticle[]> {
   try {
-    const q = `%${query}%`
-    return filterRows(await sql`
+    const trimmed = (query || '').trim()
+    if (!trimmed) return []
+
+    const tokens = trimmed
+      .split(/\s+/)
+      .map((t) => t.trim())
+      .filter(Boolean)
+
+    if (tokens.length === 0) return []
+
+    // Match all tokens or full phrase across title, description, content, category, author
+    const rows = await sql`
       SELECT * FROM articles
-      WHERE (title ILIKE ${q} OR description ILIKE ${q} OR content ILIKE ${q})
-        AND status = 'published'
-      ORDER BY date DESC`)
+      WHERE status = 'published'
+        AND (
+          ${tokens.map((t) => sql`(title ILIKE ${'%' + t + '%'} OR description ILIKE ${'%' + t + '%'} OR content ILIKE ${'%' + t + '%'} OR category ILIKE ${'%' + t + '%'} OR author ILIKE ${'%' + t + '%'})`).reduce((a, b) => sql`${a} AND ${b}`)}
+          OR title ILIKE ${'%' + trimmed + '%'}
+          OR description ILIKE ${'%' + trimmed + '%'}
+        )
+      ORDER BY
+        CASE WHEN title ILIKE ${'%' + trimmed + '%'} THEN 1 ELSE 2 END,
+        date DESC
+      LIMIT 50
+    `
+    return filterRows(rows)
   } catch (e) { console.error('searchArticles:', e); return [] }
 }
 

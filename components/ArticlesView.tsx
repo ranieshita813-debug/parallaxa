@@ -225,8 +225,23 @@ const ArticlesView = () => {
                     Edit article
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  {/* TODO: not wired in the original either. Connect to your delete endpoint. */}
-                  <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      if (!confirm('Are you sure you want to delete this article?')) return
+                      try {
+                        const res = await fetch(`/api/articles/${ar.id}`, { method: 'DELETE' })
+                        if (res.ok) {
+                          setArticles(prev => prev.filter(x => x.id !== ar.id))
+                        } else {
+                          alert('Failed to delete article')
+                        }
+                      } catch (err) {
+                        console.error('Delete error:', err)
+                        alert('Failed to delete article')
+                      }
+                    }}
+                    className="cursor-pointer text-destructive focus:text-destructive"
+                  >
                     <Trash2 className="mr-2 h-4 w-4" aria-hidden />
                     Delete
                   </DropdownMenuItem>

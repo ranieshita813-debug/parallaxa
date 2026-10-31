@@ -7,6 +7,7 @@ export type User = {
   email: string;
   password: string | null;
   role: 'user' | 'admin';
+  is_frozen?: boolean;
   email_verified: Date | null;
   verification_token: string | null;
   reset_token: string | null;
@@ -114,4 +115,32 @@ export async function validatePassword(
 ): Promise < boolean > {
   if (!user.password) return false;
   return compare(password, user.password);
+}
+
+export async function getAllUsers(): Promise<User[]> {
+  const rows = await sql`
+    SELECT id, name, email, role, COALESCE(is_frozen, false) as is_frozen, created_at, updated_at
+    FROM users
+    ORDER BY created_at DESC
+  `;
+  return rows as User[];
+}
+
+export async function toggleFreezeUser(userId: string, isFrozen: boolean): Promise<boolean> {
+  const rows = await sql`
+    UPDATE users
+    SET is_frozen = ${isFrozen}, updated_at = NOW()
+    WHERE id = ${userId}
+    RETURNING id
+  `;
+  return rows.length > 0;
+}
+
+export async function deleteUser(userId: string): Promise<boolean> {
+  const rows = await sql`
+    DELETE FROM users
+    WHERE id = ${userId}
+    RETURNING id
+  `;
+  return rows.length > 0;
 }

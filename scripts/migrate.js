@@ -51,6 +51,7 @@ async function migrate() {
         email TEXT UNIQUE NOT NULL,
         password TEXT,
         role TEXT DEFAULT 'user',
+        is_frozen BOOLEAN DEFAULT FALSE,
         email_verified TIMESTAMP WITH TIME ZONE,
         verification_token TEXT,
         reset_token TEXT,
@@ -59,6 +60,13 @@ async function migrate() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `;
+
+    try {
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_frozen BOOLEAN DEFAULT FALSE;`;
+      console.log('users is_frozen column checked/added.');
+    } catch (e) {
+      console.error('Alter users table is_frozen failed:', e);
+    }
 
     await sql`
       CREATE TABLE IF NOT EXISTS articles (

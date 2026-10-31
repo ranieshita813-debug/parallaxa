@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { NewsCard, toDigitalNumber } from '@/components/news-card'
-import { NewsArticle, searchArticlesByQuery } from '@/lib/db/articles'
+import { NewsArticle } from '@/lib/db/articles'
 import { ArrowLeft, Search as SearchIcon } from 'lucide-react'
 
 export function SearchContent() {
@@ -14,21 +14,36 @@ export function SearchContent() {
   const isBn = locale === 'bn' || !locale
 
   const query = searchParams.get('q') || ''
+  const category = searchParams.get('category') || ''
   const [results, setResults] = useState<NewsArticle[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       if (query.trim()) {
-        const found = await searchArticlesByQuery(query)
-        setResults(found)
+        try {
+          setIsLoading(true)
+          const catParam = category ? `&category=${encodeURIComponent(category)}` : ''
+          const res = await fetch(`/api/articles/search?q=${encodeURIComponent(query.trim())}${catParam}`)
+          if (res.ok) {
+            const data = await res.json()
+            setResults(Array.isArray(data.articles) ? data.articles : [])
+          } else {
+            setResults([])
+          }
+        } catch (e) {
+          console.error('Failed to search articles:', e)
+          setResults([])
+        } finally {
+          setIsLoading(false)
+        }
       } else {
         setResults([])
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }
     load()
-  }, [query])
+  }, [query, category])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

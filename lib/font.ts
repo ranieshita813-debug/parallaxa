@@ -1,15 +1,31 @@
 import localFont from 'next/font/local'
 
-// Bangla Font: Siyam Rupali
+// Bangla Font: SolaimanLipi & Kalpurush
 export const banglaFont = localFont({
   src: [
     {
-      path: '../public/local/font/TiroBangla-Regular.ttf',
+      path: '../public/local/font/SolaimanLipi-Regular.ttf',
+      style: 'normal',
+      weight: '400'
+    },
+    {
+      path: '../public/local/font/SolaimanLipi-Bold.ttf',
+      style: 'normal',
+      weight: '700'
+    }
+  ],
+  variable: '--font-bangla'
+})
+
+export const kalpurushFont = localFont({
+  src: [
+    {
+      path: '../public/local/font/Kalpurush.ttf',
       style: 'normal',
       weight: '400'
     }
   ],
-  variable: '--font-bangla'
+  variable: '--font-kalpurush'
 })
 export const banglaFontlogo = localFont({
   src: [

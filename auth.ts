@@ -31,14 +31,16 @@ export const {
         const valid = await validatePassword(user, password);
         if (!valid) return null;
 
-        // Block unverified users (optional — remove if not using email verification)
-        // if (!user.email_verified) return null;
+        if (user.is_frozen) {
+          throw new Error('Account is frozen. Please contact administrator.');
+        }
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
+          is_frozen: user.is_frozen,
           emailVerified: user.email_verified,
         } as any;
       },

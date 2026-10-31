@@ -38,6 +38,7 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await req.json()
+    const isAdmin = (session.user as any)?.role === 'admin'
 
     const article = await dal.updateMyArticle(session.user.id, id, {
       // Core
@@ -70,7 +71,7 @@ export async function PATCH(
       ...(body.scheduledAt   !== undefined && {
         scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : undefined,
       }),
-    })
+    }, isAdmin)
 
     return NextResponse.json(article)
   } catch (e) {
@@ -92,7 +93,8 @@ export async function DELETE(
 
   try {
     const { id } = await params
-    await dal.deleteMyArticle(session.user.id, id)
+    const isAdmin = (session.user as any)?.role === 'admin'
+    await dal.deleteMyArticle(session.user.id, id, isAdmin)
     return NextResponse.json({ success: true })
   } catch (e) {
     if (e instanceof NotFoundError) return NextResponse.json({ error: 'Not found' },  { status: 404 })

@@ -21,8 +21,6 @@ import { NewsArticle } from '@/lib/db/articles'
 import { createCustomBlockPlugin, DBBlockConfig } from '@/lib/mdx/block-registry'
 import '@/lib/mdx/blocks'
 import { customBlockComponents } from '@/components/mdx/CustomBlockRenderer'
-import ReactionButtons from '@/components/article/ReactionButtons'
-import CommentsSection from '@/components/article/CommentsSection'
 import FramedQuote from '@/components/mdx/FramedCornersQuote'
 import {
   Check, Copy, ArrowLeft, ChevronRight, Bookmark, BookmarkCheck,
@@ -858,14 +856,8 @@ export default function ArticlePage({
                 />
               </article>
 
-              {/* Reactions */}
-              <div className="no-print my-8 border-y border-slate-200 py-8">
-                <p className="mb-4 text-sm font-bold uppercase tracking-widest text-slate-600">What do you think?</p>
-                <ReactionButtons articleId={article.id} />
-              </div>
-
               {/* Bottom share bar with rounded and transparent buttons */}
-              <div className="no-print mb-12 flex flex-wrap items-center gap-3">
+              <div className="no-print my-8 mb-12 flex flex-wrap items-center gap-3">
                 <span className="text-sm font-bold uppercase tracking-widest text-slate-900">Share</span>
                 <button
                   onClick={handleShareTwitter}
@@ -895,11 +887,6 @@ export default function ArticlePage({
                 >
                   {copied ? <Check className="h-4 w-4 text-green-600" aria-hidden /> : <LinkIcon className="h-4 w-4" aria-hidden />}
                 </button>
-              </div>
-
-              {/* Comments */}
-              <div className="no-print mb-16" id="comments">
-                <CommentsSection articleId={article.id} />
               </div>
 
               {/* More in category */}

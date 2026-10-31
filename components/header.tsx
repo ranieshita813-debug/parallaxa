@@ -464,33 +464,32 @@ export function Header({
 
       {/* ── MOBILE TOP BAR ── */}
       <div className="md:hidden">
-        <div className="px-4 h-14 flex items-center justify-between gap-3">
-          <div className="flex items-center justify-start gap-3 select-none h-full">
-            <button
-              onClick={() => {
-                setIsMenuOpen((prev) => !prev)
-                setIsSearchOpen(false)
-              }}
-              className="p-2 -ml-2 text-gray-900 hover:bg-card transition-colors rounded-md"
-              aria-label={isMenuOpen ? (isBn ? 'মেনু বন্ধ করুন' : 'Close menu') : (isBn ? 'মেনু খুলুন' : 'Open menu')}
-            >
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-            <Link href={`/${locale}`} className="flex items-center gap-2.5 flex-shrink-0 select-none h-full">
-              <div className="flex items-center h-full">
-                <Image
-                  src="/logo.png"
-                  alt="the Hindu Campus"
-                  width={343}
-                  height={42}
-                  priority
-                  className="h-7 w-auto object-contain"
-                />
-              </div>
+        <div className="px-4 h-14 relative flex items-center justify-between">
+          <button
+            onClick={() => {
+              setIsMenuOpen((prev) => !prev)
+              setIsSearchOpen(false)
+            }}
+            className="p-2 -ml-2 text-gray-900 hover:bg-card transition-colors rounded-md z-10"
+            aria-label={isMenuOpen ? (isBn ? 'মেনু বন্ধ করুন' : 'Close menu') : (isBn ? 'মেনু খুলুন' : 'Open menu')}
+          >
+            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+
+          <div className="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none">
+            <Link href={`/${locale}`} className="flex items-center pointer-events-auto select-none">
+              <Image
+                src="/logo.png"
+                alt="the Hindu Campus"
+                width={343}
+                height={42}
+                priority
+                className="h-7 w-auto object-contain"
+              />
             </Link>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 z-10">
             <button
               onClick={() => {
                 setIsSearchOpen(!isSearchOpen)
