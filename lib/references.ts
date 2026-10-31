@@ -11,26 +11,19 @@ export interface ArticleReference {
 }
 
 /**
- * Extracts all [!reference(...)] occurrences from markdown content,
- * replacing them with inline links [1](#ref-1), [2](#ref-2), etc.,
- * and returning the cleaned content alongside the extracted reference array.
+ * Normalizes legacy [!reference(...)] occurrences to standard markdown footnote references [^n]
+ * and appends footnote definitions [^n]: ... at the bottom.
  */
-export function processArticleReferences(
-  rawContent: string
-): {
-  content: string
-  references: ArticleReference[]
-} {
+export function normalizeLegacyReferences(rawContent: string): string {
   if (!rawContent || !rawContent.includes('[!reference')) {
-    return {
-      content: rawContent || '',
-      references: [],
-    }
+    return rawContent || ''
   }
 
+  const existingFootnotes = Array.from(rawContent.matchAll(/\[\^(\d+)\]/g)).map(m => parseInt(m[1], 10))
+  let count = existingFootnotes.length > 0 ? Math.max(...existingFootnotes) : 0
+
+  const definitions: string[] = []
   const refRegex = /\[!reference\s*\(([\s\S]*?)\)\s*\]/g
-  const references: ArticleReference[] = []
-  let count = 0
 
   const content = rawContent.replace(refRegex, (_, paramsStr) => {
     count++
@@ -40,24 +33,40 @@ export function processArticleReferences(
     const year = params.year || ''
     const site = params.site || params.siteName || ''
     const url = params.url || ''
-    const description = params.description || ''
 
-    references.push({
-      index: count,
-      title,
-      author,
-      year,
-      site,
-      url,
-      description,
-    })
+    let defText = ''
+    if (url) {
+      defText = `[${title}](${url})`
+    } else {
+      defText = title
+    }
 
-    const hoverTitle = (title || 'তথ্যসূত্র').replace(/"/g, '&quot;')
-    return ` [${count}](#ref-${count} "${hoverTitle}")`
+    const metaParts: string[] = []
+    if (author) metaParts.push(author)
+    if (year) metaParts.push(`(${year})`)
+    if (site) metaParts.push(site)
+
+    if (metaParts.length > 0) {
+      defText += ` - ${metaParts.join(', ')}`
+    }
+
+    definitions.push(`[^${count}]: ${defText}`)
+    return `[^${count}]`
   })
 
-  return {
-    content,
-    references,
+  if (definitions.length > 0) {
+    return `${content.trimEnd()}\n\n${definitions.join('\n')}`
   }
+
+  return content
+}
+
+/**
+ * Helper to get the next footnote index from markdown content
+ */
+export function getNextFootnoteIndex(content: string): number {
+  if (!content) return 1
+  const matches = Array.from(content.matchAll(/\[\^(\d+)\]/g)).map(m => parseInt(m[1], 10))
+  if (matches.length === 0) return 1
+  return Math.max(...matches) + 1
 }
