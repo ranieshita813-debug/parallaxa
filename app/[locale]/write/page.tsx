@@ -213,7 +213,20 @@ function Mermaid({ chart }: { chart: string }) {
     const t = setTimeout(async () => {
       try {
         const mermaid = (await import('mermaid')).default
-        mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict', ...({ look: 'handDrawn' } as any) })
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'neutral',
+          securityLevel: 'strict',
+          themeVariables: {
+            fontSize: '18px',
+            fontFamily: "'Atma', var(--font-bangla-hand), cursive, sans-serif",
+          },
+          look: 'handDrawn',
+          handDrawnSeed: 14,
+          flowchart: {
+            curve: 'basis',
+          },
+        } as any)
         const { svg } = await mermaid.render(rid, chart)
         if (!off) { setSvg(svg); setErr('') }
       } catch (e: any) {
@@ -742,7 +755,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
 
       <button type="button"
         onClick={() => { const last = blocks[blocks.length - 1]; isBlank(last.text) ? focusBlock(last.id) : addAt(blocks.length) }}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-slate-200 py-3 text-sm text-slate-400 transition-colors hover:border-[#3858e9] hover:text-[#3858e9]">
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-slate-300 bg-transparent py-3 text-sm font-medium text-slate-500 transition-colors hover:border-[#3858e9] hover:bg-slate-50/50 hover:text-[#3858e9]">
         <Plus size={14} /> Add block
       </button>
     </div>
@@ -1074,9 +1087,26 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
     autocompletion({ override: [customCompletions] }),
   ], [customCompletions])
 
+  const parseAndAddTags = (input: string) => {
+    if (!input) return
+    const rawTags = input.split(/[,;\n]+/).map(t => t.trim().toLowerCase().replace(/^#+/, '').replace(/\s+/g, '-')).filter(Boolean)
+    if (rawTags.length === 0) return
+    setMetaState(m => {
+      const existing = new Set(m.tags)
+      const nextTags = [...m.tags]
+      for (const t of rawTags) {
+        if (!existing.has(t)) {
+          existing.add(t)
+          nextTags.push(t)
+        }
+      }
+      return { ...m, tags: nextTags }
+    })
+    markDirty()
+  }
+
   const addTag = () => {
-    const t = tagInput.trim().toLowerCase().replace(/\s+/g, '-')
-    if (t && !meta.tags.includes(t)) setMeta('tags', [...meta.tags, t])
+    parseAndAddTags(tagInput)
     setTagInput('')
   }
 
@@ -1156,14 +1186,47 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
         {activeTab === 'tags' && (<>
           <Panel title="Tags">
             <div className="flex gap-2">
-              <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} placeholder="Add a tag"
-                className="min-w-0 flex-1 rounded-full border border-slate-200 px-3 py-2 text-sm outline-none placeholder:text-slate-300 focus:border-[#3858e9] focus:ring-2 focus:ring-[#3858e9]/20" />
-              <button type="button" onClick={addTag} className="rounded-full bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-black">Add</button>
+              <input
+                value={tagInput}
+                onChange={e => {
+                  const val = e.target.value
+                  if (val.includes(',')) {
+                    parseAndAddTags(val)
+                    setTagInput('')
+                  } else {
+                    setTagInput(val)
+                  }
+                }}
+                onPaste={e => {
+                  const pasted = e.clipboardData.getData('text')
+                  if (pasted && (pasted.includes(',') || pasted.includes('\n'))) {
+                    e.preventDefault()
+                    parseAndAddTags(pasted)
+                    setTagInput('')
+                  }
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault()
+                    addTag()
+                  }
+                }}
+                placeholder="Add tags (e.g. tag1, tag2, tag3...)"
+                className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-[#3858e9] focus:ring-2 focus:ring-[#3858e9]/20"
+              />
+              <button
+                type="button"
+                onClick={addTag}
+                className="rounded-full bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-black"
+              >
+                Add
+              </button>
             </div>
+            <p className="text-[11px] text-slate-400">Comma-separated tags (tag1,tag2,tag3...) are automatically parsed.</p>
             {meta.tags.length ? (
               <div className="flex flex-wrap gap-2">
                 {meta.tags.map(t => (
-                  <span key={t} className="flex items-center gap-1.5 rounded-full border border-slate-200 py-1 pl-3 pr-2 text-sm text-slate-700">
+                  <span key={t} className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 py-1 pl-3 pr-2 text-sm text-slate-700 transition-colors hover:bg-slate-100">
                     #{t}
                     <button type="button" aria-label={`Remove tag ${t}`} onClick={() => setMeta('tags', meta.tags.filter(x => x !== t))} className="rounded-full p-0.5 text-slate-400 hover:text-red-600"><X size={12} /></button>
                   </span>
@@ -1252,8 +1315,8 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 sm:px-4">
           <IconBtn icon={ChevronLeft} label="Leave editor" onClick={exit} />
           {mode !== 'preview' && (
-            <button type="button" aria-label="Add block" aria-expanded={libraryOpen} onClick={() => setLibraryOpen(o => !o)}
-              className={`flex h-9 w-9 items-center justify-center rounded-full transition-transform ${libraryOpen ? 'rotate-45 bg-slate-900 text-white' : ACCENT}`}>
+            <button type="button" aria-label="Add block" title="Add block" aria-expanded={libraryOpen} onClick={() => setLibraryOpen(o => !o)}
+              className={`flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-transparent text-slate-700 transition-colors hover:bg-slate-100/60 ${libraryOpen ? 'rotate-45 !bg-slate-900 !text-white !border-slate-900' : ''}`}>
               <Plus size={18} />
             </button>
           )}
