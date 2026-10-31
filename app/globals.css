@@ -95,7 +95,7 @@
     border-radius: 0;
   }
   body {
-    font-family: var(--font-sans), var(--font-bangla);
+    font-family: var(--font-sans), var(--font-bangla), var(--font-kalpurush), sans-serif;
     @apply bg-background text-foreground;
   }
   .bangla-handdrawn {

@@ -1,5 +1,5 @@
 // app/[locale]/layout.tsx
-import { sansFont, serifFont, monoFont, banglaFontlogo, banglaFont, banglaHandDrawnFont } from '@/lib/font'
+import { sansFont, serifFont, monoFont, banglaFontlogo, banglaFont, banglaHandDrawnFont, kalpurushFont } from '@/lib/font'
 import { ClientSessionProvider } from '@/components/session-provider'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
@@ -20,7 +20,7 @@ export default async function RootLayout({
   const { locale } = await params
 
   return (
-    <html lang={locale} className={`${sansFont.variable} ${serifFont.variable} ${banglaFontlogo.variable} ${monoFont.variable} ${banglaFont.variable} ${banglaHandDrawnFont.variable}`}>
+    <html lang={locale} className={`${sansFont.variable} ${serifFont.variable} ${banglaFontlogo.variable} ${monoFont.variable} ${banglaFont.variable} ${kalpurushFont.variable} ${banglaHandDrawnFont.variable}`}>
       <body className={`antialiased bg-background text-foreground`}>
         <ClientSessionProvider>
           {children}

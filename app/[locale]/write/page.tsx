@@ -69,8 +69,8 @@ const DEFAULT_META: Meta = {
   cssClass: '', redirectUrl: '',
 }
 
-const ACCENT = 'bg-[#3858e9] hover:bg-[#2c47c4] text-white'
-const RING = 'ring-2 ring-[#3858e9]'
+const ACCENT = 'bg-neutral-900 hover:bg-neutral-800 text-white'
+const RING = 'ring-2 ring-neutral-900'
 
 const TYPE_LABEL: Record<BlockType, string> = {
   p: 'Paragraph', h1: 'Heading 1', h2: 'Heading 2', h3: 'Heading 3', ul: 'List', ol: 'Numbered list',
@@ -235,7 +235,7 @@ function Mermaid({ chart }: { chart: string }) {
     }, 250)
     return () => { off = true; clearTimeout(t) }
   }, [chart, rid])
-  if (err && !svg) return <p className="my-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Diagram error: {err}</p>
+  if (err && !svg) return <p className="my-4 rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-800">Diagram error: {err}</p>
   return <div className="my-4 flex justify-center overflow-x-auto" dangerouslySetInnerHTML={{ __html: svg }} />
 }
 
@@ -320,9 +320,9 @@ function Badges({ meta }: { meta: Meta }) {
   if (!meta.breaking && !meta.featured && !meta.trending) return null
   return (
     <div className="flex flex-wrap gap-2">
-      {meta.breaking && <span className="flex items-center gap-1 rounded-full border border-red-100 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600"><Zap size={10} /> Breaking</span>}
-      {meta.featured && <span className="flex items-center gap-1 rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600"><Star size={10} /> Featured</span>}
-      {meta.trending && <span className="flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600"><TrendingUp size={10} /> Trending</span>}
+      {meta.breaking && <span className="flex items-center gap-1 rounded-full border border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-900"><Zap size={10} /> Breaking</span>}
+      {meta.featured && <span className="flex items-center gap-1 rounded-full border border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-900"><Star size={10} /> Featured</span>}
+      {meta.trending && <span className="flex items-center gap-1 rounded-full border border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-900"><TrendingUp size={10} /> Trending</span>}
     </div>
   )
 }
@@ -423,8 +423,8 @@ const Panel = ({ title, children }: { title: string; children: ReactNode }) => (
 const CheckItem = ({ ok, text }: { ok: boolean; text: string }) => (
   <div className="flex items-start gap-2.5">
     {ok
-      ? <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-600" />
-      : <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-600" />}
+      ? <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-neutral-900" />
+      : <AlertCircle size={15} className="mt-0.5 shrink-0 text-neutral-400" />}
     <span className="min-w-0 text-sm leading-snug text-slate-700">{text}</span>
   </div>
 )
@@ -497,7 +497,7 @@ const BLOCK_TA: Record<BlockType, string> = {
   math: 'rounded-lg bg-slate-50 p-3 font-mono text-[13px] leading-relaxed text-slate-700',
   table: 'rounded-lg bg-slate-50 p-3 font-mono text-[13px] leading-relaxed text-slate-700',
   html: 'rounded-lg bg-slate-50 p-3 font-mono text-[13px] leading-relaxed text-slate-700',
-  custom: 'rounded-lg bg-amber-50 p-3 font-mono text-[13px] text-amber-800', image: 'rounded-lg bg-slate-50 p-3 font-mono text-[13px] text-slate-700',
+  custom: 'rounded-lg bg-neutral-100 p-3 font-mono text-[13px] text-neutral-800', image: 'rounded-lg bg-neutral-50 p-3 font-mono text-[13px] text-neutral-700',
   hr: 'text-slate-400',
 }
 
@@ -716,7 +716,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                   <IconBtn icon={ArrowDown} label="Move down" onClick={() => move(i, 1)} disabled={i === blocks.length - 1} keepFocus />
                   <IconBtn icon={Copy} label="Duplicate block" onClick={() => duplicate(i)} keepFocus />
                   <IconBtn icon={Plus} label="Add block below" onClick={() => addAt(i + 1)} keepFocus />
-                  <IconBtn icon={Trash2} label="Delete block" onClick={() => remove(i)} keepFocus className="hover:!bg-red-50 hover:!text-red-600" />
+                  <IconBtn icon={Trash2} label="Delete block" onClick={() => remove(i)} keepFocus className="hover:!bg-neutral-100 hover:!text-neutral-900" />
                 </div>
               )}
 
@@ -1141,7 +1141,7 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
               </div>
             )}
             <Field label="Image URL" value={meta.coverImage} onChange={v => setMeta('coverImage', v)} placeholder="https://…" />
-            {meta.coverImage && <button type="button" onClick={() => setMeta('coverImage', '')} className="self-start rounded-full px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50">Remove cover image</button>}
+            {meta.coverImage && <button type="button" onClick={() => setMeta('coverImage', '')} className="self-start rounded-full px-3 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100">Remove cover image</button>}
           </Panel>
           <Panel title="Summary">
             <div className="grid grid-cols-2 gap-3">
@@ -1159,8 +1159,8 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
         {activeTab === 'seo' && (<>
           <Panel title="Score">
             <div className="flex items-center gap-3">
-              <span className={`text-3xl font-bold tabular-nums ${analysis.seoScore >= 70 ? 'text-emerald-600' : analysis.seoScore >= 40 ? 'text-amber-600' : 'text-red-600'}`}>{analysis.seoScore}%</span>
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${analysis.seoScore >= 70 ? 'bg-emerald-500' : analysis.seoScore >= 40 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${analysis.seoScore}%` }} /></div>
+              <span className="text-3xl font-bold tabular-nums text-neutral-900">{analysis.seoScore}%</span>
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-neutral-200"><div className="h-full rounded-full bg-neutral-900" style={{ width: `${analysis.seoScore}%` }} /></div>
             </div>
             <div className="flex flex-col gap-2.5">{analysis.seo.map((c, i) => <CheckItem key={i} ok={c.ok} text={c.text} />)}</div>
           </Panel>
@@ -1228,7 +1228,7 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
                 {meta.tags.map(t => (
                   <span key={t} className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 py-1 pl-3 pr-2 text-sm text-slate-700 transition-colors hover:bg-slate-100">
                     #{t}
-                    <button type="button" aria-label={`Remove tag ${t}`} onClick={() => setMeta('tags', meta.tags.filter(x => x !== t))} className="rounded-full p-0.5 text-slate-400 hover:text-red-600"><X size={12} /></button>
+                    <button type="button" aria-label={`Remove tag ${t}`} onClick={() => setMeta('tags', meta.tags.filter(x => x !== t))} className="rounded-full p-0.5 text-neutral-400 hover:text-neutral-900"><X size={12} /></button>
                   </span>
                 ))}
               </div>
@@ -1332,8 +1332,8 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
             ))}
           </div>
 
-          <span className={`hidden items-center gap-2 text-sm lg:flex ${saveStatus === 'error' ? 'text-red-600' : 'text-slate-500'}`} aria-live="polite">
-            <span className={`h-2 w-2 rounded-full ${saveStatus === 'saving' ? 'animate-pulse bg-amber-400' : saveStatus === 'dirty' ? 'bg-rose-400' : saveStatus === 'error' ? 'bg-red-600' : 'bg-emerald-500'}`} />
+          <span className={`hidden items-center gap-2 text-sm lg:flex ${saveStatus === 'error' ? 'text-neutral-900 font-semibold' : 'text-neutral-500'}`} aria-live="polite">
+            <span className={`h-2 w-2 rounded-full ${saveStatus === 'saving' ? 'animate-pulse bg-neutral-500' : saveStatus === 'dirty' ? 'bg-neutral-400' : saveStatus === 'error' ? 'bg-neutral-900' : 'bg-neutral-800'}`} />
             {saveLabel}
           </span>
           <button type="button" onClick={save} disabled={saveStatus === 'saving'} className="hidden h-9 items-center rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 sm:flex">
@@ -1467,7 +1467,7 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
             <motion.div initial={{ y: 24 }} animate={{ y: 0 }} role="dialog" aria-modal="true" aria-labelledby="publish-title" onClick={e => e.stopPropagation()}
               className="w-full overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-w-[460px] sm:rounded-2xl">
               <div className="px-7 pb-4 pt-7 text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"><Sparkles size={22} /></div>
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-900"><Sparkles size={22} /></div>
                 <h3 id="publish-title" className="font-['Newsreader'] text-2xl font-bold">{meta.scheduledAt && new Date(meta.scheduledAt).getTime() > Date.now() ? 'Schedule this article?' : 'Publish this article?'}</h3>
                 <p className="mt-1 text-sm text-slate-500">Review the details before it goes live.</p>
               </div>
@@ -1498,7 +1498,7 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
       {/* Toast */}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-5 z-[110] flex justify-center px-4">
         {toast && (
-          <div className={`pointer-events-auto flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-lg ${toast.kind === 'error' ? 'bg-red-600' : 'bg-slate-900'}`}>
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-lg bg-neutral-950 border border-neutral-800">
             {toast.kind === 'error' ? <AlertCircle size={15} /> : <Check size={15} />}{toast.text}
           </div>
         )}

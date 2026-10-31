@@ -21,6 +21,9 @@ import ArticlesView from '@/components/ArticlesView';
 import AnalysisView from '@/components/dashboard/AnalysisView';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import HomeSectionManager from '@/components/dashboard/HomeSectionManager';
+import PipelineManager from '@/components/dashboard/PipelineManager';
+import UserManager from '@/components/dashboard/UserManager';
+import { Lightning, Users } from '@phosphor-icons/react';
 import Link from 'next/link';
 
 export default function Dashboard() {
@@ -34,7 +37,9 @@ export default function Dashboard() {
     { id: 'overview', label: 'Overview', icon: House, component: <DashboardOverview /> },
     { id: 'articles', label: 'Articles', icon: FileText, component: <ArticlesView /> },
     { id: 'analysis', label: 'Analysis', icon: ChartBar, component: <AnalysisView /> },
-    { id: 'home-manager', label: 'Home Manager', icon: ListChecks, component: <HomeSectionManager /> },
+    { id: 'pipeline', label: 'AI Pipeline', icon: Lightning, component: <PipelineManager />, adminOnly: true },
+    { id: 'users', label: 'Users', icon: Users, component: <UserManager />, adminOnly: true },
+    { id: 'home-manager', label: 'Home Manager', icon: ListChecks, component: <HomeSectionManager />, adminOnly: true },
     { id: 'menu-manager', label: 'Menu Manager', icon: List, href: `/${locale}/admin/menu`, adminOnly: true },
     { id: 'settings', label: 'Settings', icon: Gear, href: `/${locale}/admin/settings`, adminOnly: true },
   ];

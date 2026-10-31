@@ -278,52 +278,91 @@ export const dal = {
     userId: string,
     articleId: string,
     input: UpdateArticleInput,
+    isAdmin = false,
   ): Promise<NewsArticle> {
     assertUserId(userId)
 
-    // প্রথমে ownership confirm করি
-    const existing = await this.getMyArticleById(userId, articleId)
+    const existing = isAdmin
+      ? await (await import('./articles')).getArticleById(articleId)
+      : await this.getMyArticleById(userId, articleId)
+
+    if (!existing) throw new NotFoundError(`Article not found: ${articleId}`)
     const merged = { ...existing, ...input }
 
     try {
-      const rows = await sql`
-        UPDATE articles SET
-          title            = ${merged.title},
-          description      = ${merged.description},
-          content          = ${merged.content},
-          category         = ${merged.category},
-          author           = ${merged.author},
-          date             = ${merged.date instanceof Date ? merged.date.toISOString() : merged.date},
-          image            = ${merged.image},
-          read_time        = ${merged.readTime},
-          featured         = ${merged.featured         ?? false},
-          breaking         = ${merged.breaking         ?? false},
-          trending         = ${merged.trending         ?? false},
-          seo_title        = ${merged.seoTitle         ?? null},
-          meta_description = ${merged.metaDescription  ?? null},
-          focus_keyword    = ${merged.focusKeyword     ?? null},
-          canonical_url    = ${merged.canonicalUrl     ?? null},
-          og_image         = ${merged.ogImage          ?? null},
-          twitter_card     = ${merged.twitterCard      ?? 'summary_large_image'},
-          no_index         = ${merged.noIndex          ?? false},
-          allow_comments   = ${merged.allowComments    ?? true},
-          show_in_rss      = ${merged.showInRss        ?? true},
-          amp_enabled      = ${merged.ampEnabled       ?? false},
-          redirect_url     = ${merged.redirectUrl      ?? null},
-          css_class        = ${merged.cssClass         ?? null},
-          visibility       = ${merged.visibility       ?? 'public'},
-          scheduled_at     = ${merged.scheduledAt instanceof Date
-                               ? merged.scheduledAt.toISOString()
-                               : (merged.scheduledAt ?? null)},
-          status           = ${merged.status           ?? 'draft'},
-          source_url       = ${merged.sourceUrl        ?? null},
-          updated_at       = NOW()
-        WHERE id      = ${articleId}
-          AND user_id = ${userId}        -- ← ownership lock
-        RETURNING *
-      `
+      const rows = isAdmin
+        ? await sql`
+            UPDATE articles SET
+              title            = ${merged.title},
+              description      = ${merged.description},
+              content          = ${merged.content},
+              category         = ${merged.category},
+              author           = ${merged.author},
+              date             = ${merged.date instanceof Date ? merged.date.toISOString() : merged.date},
+              image            = ${merged.image},
+              read_time        = ${merged.readTime},
+              featured         = ${merged.featured         ?? false},
+              breaking         = ${merged.breaking         ?? false},
+              trending         = ${merged.trending         ?? false},
+              seo_title        = ${merged.seoTitle         ?? null},
+              meta_description = ${merged.metaDescription  ?? null},
+              focus_keyword    = ${merged.focusKeyword     ?? null},
+              canonical_url    = ${merged.canonicalUrl     ?? null},
+              og_image         = ${merged.ogImage          ?? null},
+              twitter_card     = ${merged.twitterCard      ?? 'summary_large_image'},
+              no_index         = ${merged.noIndex          ?? false},
+              allow_comments   = ${merged.allowComments    ?? true},
+              show_in_rss      = ${merged.showInRss        ?? true},
+              amp_enabled      = ${merged.ampEnabled       ?? false},
+              redirect_url     = ${merged.redirectUrl      ?? null},
+              css_class        = ${merged.cssClass         ?? null},
+              visibility       = ${merged.visibility       ?? 'public'},
+              scheduled_at     = ${merged.scheduledAt instanceof Date
+                                   ? merged.scheduledAt.toISOString()
+                                   : (merged.scheduledAt ?? null)},
+              status           = ${merged.status           ?? 'draft'},
+              source_url       = ${merged.sourceUrl        ?? null},
+              updated_at       = NOW()
+            WHERE id = ${articleId}
+            RETURNING *
+          `
+        : await sql`
+            UPDATE articles SET
+              title            = ${merged.title},
+              description      = ${merged.description},
+              content          = ${merged.content},
+              category         = ${merged.category},
+              author           = ${merged.author},
+              date             = ${merged.date instanceof Date ? merged.date.toISOString() : merged.date},
+              image            = ${merged.image},
+              read_time        = ${merged.readTime},
+              featured         = ${merged.featured         ?? false},
+              breaking         = ${merged.breaking         ?? false},
+              trending         = ${merged.trending         ?? false},
+              seo_title        = ${merged.seoTitle         ?? null},
+              meta_description = ${merged.metaDescription  ?? null},
+              focus_keyword    = ${merged.focusKeyword     ?? null},
+              canonical_url    = ${merged.canonicalUrl     ?? null},
+              og_image         = ${merged.ogImage          ?? null},
+              twitter_card     = ${merged.twitterCard      ?? 'summary_large_image'},
+              no_index         = ${merged.noIndex          ?? false},
+              allow_comments   = ${merged.allowComments    ?? true},
+              show_in_rss      = ${merged.showInRss        ?? true},
+              amp_enabled      = ${merged.ampEnabled       ?? false},
+              redirect_url     = ${merged.redirectUrl      ?? null},
+              css_class        = ${merged.cssClass         ?? null},
+              visibility       = ${merged.visibility       ?? 'public'},
+              scheduled_at     = ${merged.scheduledAt instanceof Date
+                                   ? merged.scheduledAt.toISOString()
+                                   : (merged.scheduledAt ?? null)},
+              status           = ${merged.status           ?? 'draft'},
+              source_url       = ${merged.sourceUrl        ?? null},
+              updated_at       = NOW()
+            WHERE id      = ${articleId}
+              AND user_id = ${userId}
+            RETURNING *
+          `
 
-      // যদি 0 rows আসে মানে অন্যের article ছিল অথবা পাওয়া যায়নি
       if (!rows[0]) throw new ForbiddenError('Update denied: article not found or access forbidden')
       return mapRow(rows[0] as Record<string, unknown>)!
     } catch (e) {
@@ -334,17 +373,23 @@ export const dal = {
   },
 
   /**
-   * Article delete — user_id = userId WHERE clause দিয়ে অন্যের article delete করা অসম্ভব।
+   * Article delete — user_id = userId WHERE clause দিয়ে অন্যের article delete করা অসম্ভব (এডমিন ব্যতীত).
    */
-  async deleteMyArticle(userId: string, articleId: string): Promise<void> {
+  async deleteMyArticle(userId: string, articleId: string, isAdmin = false): Promise<void> {
     assertUserId(userId)
     try {
-      const rows = await sql`
-        DELETE FROM articles
-        WHERE id      = ${articleId}
-          AND user_id = ${userId}        -- ← ownership lock
-        RETURNING id
-      `
+      const rows = isAdmin
+        ? await sql`
+            DELETE FROM articles
+            WHERE id = ${articleId}
+            RETURNING id
+          `
+        : await sql`
+            DELETE FROM articles
+            WHERE id      = ${articleId}
+              AND user_id = ${userId}
+            RETURNING id
+          `
       if (rows.length === 0) {
         throw new ForbiddenError('Delete denied: article not found or access forbidden')
       }
