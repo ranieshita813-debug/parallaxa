@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, ComponentPropsWithoutRef } from 'react'
+import { useState, useEffect, useRef, useCallback, Children, isValidElement, ComponentPropsWithoutRef } from 'react'
 import rehypeMermaid from 'rehype-mermaid'
 import { toDigitalNumber } from '@/components/news-card'
-import PinwheelLoader from '@/components/logo';
+import PinwheelLoader from '@/components/logo'
 import Markdown, { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -13,7 +13,7 @@ import 'katex/dist/katex.min.css'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { sansFont, serifFont, slabo ,banglaFontlogo, banglaFont } from '@/lib/font'
+import { serifFont } from '@/lib/font'
 
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
@@ -24,22 +24,23 @@ import '@/lib/mdx/blocks'
 import { customBlockComponents } from '@/components/mdx/CustomBlockRenderer'
 import ReactionButtons from '@/components/article/ReactionButtons'
 import CommentsSection from '@/components/article/CommentsSection'
+import FramedQuote from '@/components/mdx/FramedCornersQuote'
 import {
-  Check, Copy, ArrowLeft, ChevronRight, Volume2, Bookmark, BookmarkCheck,
-  Printer, Share2, Facebook, Link as LinkIcon, Clock, Eye, Twitter, Linkedin
+  Check, Copy, ArrowLeft, ChevronRight, Bookmark, BookmarkCheck,
+  Printer, Share2, Link as LinkIcon, Clock, Eye,
 } from 'lucide-react'
 import { FaFacebook, FaTwitter, FaLinkedinIn } from 'react-icons/fa'
-import { Children, isValidElement } from "react";
-import FramedQuote from "@/components/mdx/FramedCornersQuote";
 
-function getText(node) {
-  if (typeof node === "string") return node;
-  if (Array.isArray(node)) return node.map(getText).join("");
-  if (isValidElement(node)) return getText(node.props.children);
-  return "";
+/* ------------------------------------------------------------------ */
+/* Helpers                                                             */
+/* ------------------------------------------------------------------ */
+
+function getText(node: any): string {
+  if (typeof node === 'string') return node
+  if (Array.isArray(node)) return node.map(getText).join('')
+  if (isValidElement(node)) return getText((node.props as any).children)
+  return ''
 }
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function hasFirstImage(content: string): boolean {
   if (!content) return false
@@ -48,9 +49,10 @@ function hasFirstImage(content: string): boolean {
 }
 
 function estimateReadTime(text: string): number {
-  const words = text.trim().split(/\s+/).length
+  const words = (text ?? '').trim().split(/\s+/).length
   return Math.max(1, Math.ceil(words / 200))
 }
+
 function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const h = Math.floor(diff / 3_600_000)
@@ -63,163 +65,155 @@ function formatRelativeTime(dateStr: string): string {
 
 function formatFullDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', {
-    weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
   })
 }
 
-function authorInitials(name: string): string {
-  return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+function authorInitials(name?: string): string {
+  if (!name) return '?'
+  return name.split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
 }
 
-function toAuthorSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
-}
+/* ------------------------------------------------------------------ */
+/* Code block                                                          */
+/* ------------------------------------------------------------------ */
 
-// ── Code Block ────────────────────────────────────────────────────────────────
-
-function CodeBlock({ children, className }: ComponentPropsWithoutRef < 'code' > ) {
+function CodeBlock({ children, className }: ComponentPropsWithoutRef<'code'>) {
   const [copied, setCopied] = useState(false)
   const lang = className?.replace('language-', '') ?? 'text'
   const code = typeof children === 'string' ? children : String(children ?? '')
   const isInline = !className
-  
+
   if (isInline) {
     return (
-      <code className="bg-[#efedee] text-[#585f64] px-1.5 py-0.5 rounded text-[0.82em] font-mono break-all">
+      <code className="break-all rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-700">
         {children}
       </code>
     )
   }
-  
+
   return (
-    <div className="relative my-4 rounded-xl overflow-hidden border border-[#dcdad9] bg-[#1e1e1e] text-gray-100 max-w-full">
-      <div className="flex items-center justify-between px-4 py-2 bg-[#2a2a2a] border-b border-[#3a3a3a]">
-        <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest truncate mr-2">{lang}</span>
+    <div className="relative my-6 max-w-full overflow-hidden rounded-xl border border-slate-700 bg-[#1e1e1e] text-gray-100">
+      <div className="flex items-center justify-between border-b border-[#3a3a3a] bg-[#2a2a2a] px-4 py-1.5">
+        <span className="mr-2 truncate font-mono text-[11px] uppercase tracking-widest text-gray-400">{lang}</span>
         <button
-          onClick={() => { 
-            navigator.clipboard.writeText(code.trim()); 
-            setCopied(true); 
-            setTimeout(() => setCopied(false), 1800) 
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(code.trim())
+              setCopied(true)
+              setTimeout(() => setCopied(false), 1800)
+            } catch {
+              /* clipboard blocked: ignore */
+            }
           }}
-          className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white transition-colors shrink-0"
+          className="flex min-h-[36px] shrink-0 items-center gap-1.5 text-xs text-gray-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
-          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto px-4 py-3 text-xs sm:text-sm leading-relaxed font-mono">
+      <pre className="overflow-x-auto px-4 py-3 font-mono text-xs leading-relaxed sm:text-sm">
         <code>{code}</code>
       </pre>
     </div>
   )
 }
 
-// ── MD Component Map ──────────────────────────────────────────────────────────
+/* ------------------------------------------------------------------ */
+/* Markdown component map: reading-first typography                    */
+/* ------------------------------------------------------------------ */
+
+const headingFont = { fontFamily: 'var(--font-serif), var(--font-bangla-logo)' }
 
 const mdComponents: Components = {
   ...customBlockComponents,
   code: CodeBlock as Components['code'],
   h1: ({ children }) => (
-    <h1 className={` text-2xl sm:text-3xl font-bold text-gray-900 mt-8 mb-3 leading-tight uppercase`}>{children}</h1>
+    <h1 style={headingFont} className="mb-3 mt-10 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className={` text-xl sm:text-2xl font-semibold text-gray-900 mt-7 mb-2 leading-snug uppercase`}>{children}</h2>
+    <h2 style={headingFont} className="mb-3 mt-10 text-2xl font-bold leading-snug text-slate-900 sm:text-[28px]">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className={` text-lg sm:text-xl font-semibold text-gray-800 mt-5 mb-1 uppercase`}>{children}</h3>
+    <h3 style={headingFont} className="mb-2 mt-8 text-xl font-bold leading-snug text-slate-900 sm:text-2xl">{children}</h3>
   ),
-  p: ({ children }) => (
-    <p className="text-gray-800 text-[17px] leading-[1.85] my-4">{children}</p>
-  ),
+  p: ({ children }) => <p className="my-5 text-[18px] leading-[1.9] text-slate-800">{children}</p>,
   ul: ({ children }) => (
-    <ul className="list-disc pl-6 my-4 flex flex-col gap-2 text-[17px] text-gray-800">{children}</ul>
+    <ul className="my-5 flex list-disc flex-col gap-2 pl-6 text-[18px] leading-[1.8] text-slate-800 marker:text-red-600">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="list-decimal pl-6 my-4 flex flex-col gap-2 text-[17px] text-gray-800">{children}</ol>
+    <ol className="my-5 flex list-decimal flex-col gap-2 pl-6 text-[18px] leading-[1.8] text-slate-800 marker:font-bold marker:text-red-600">{children}</ol>
   ),
-  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  li: ({ children }) => <li className="pl-1">{children}</li>,
   blockquote: ({ children }) => {
-    const items = Children.toArray(children).filter(isValidElement);
-    const last = items[items.length - 1];
-    const lastText = last ? getText(last).trim() : "";
+    const items = Children.toArray(children).filter(isValidElement)
+    const last = items[items.length - 1]
+    const lastText = last ? getText(last).trim() : ''
 
-    const hasAuthor = lastText.startsWith("—") || lastText.startsWith("-");
-    const author = hasAuthor ? lastText.replace(/^[—-]\s*/, "") : undefined;
-    const quoteChildren = hasAuthor ? items.slice(0, -1) : items;
+    const hasAuthor = lastText.startsWith('—') || lastText.startsWith('-')
+    const author = hasAuthor ? lastText.replace(/^[—-]\s*/, '') : undefined
+    const quoteChildren = hasAuthor ? items.slice(0, -1) : items
 
-    return <FramedQuote author={author}>{quoteChildren}</FramedQuote>;
-  
+    return <FramedQuote author={author}>{quoteChildren}</FramedQuote>
   },
   table: ({ children }) => (
-    <div className="overflow-x-auto my-6 max-w-full">
-    <table className="w-full text-sm border-collapse">{children}</table>
-  </div>
+    <div className="my-8 max-w-full overflow-x-auto">
+      <table className="w-full border-collapse text-sm">{children}</table>
+    </div>
   ),
-  thead: ({ children }) => (
-    <thead className="border-b border-gray-300">{children}</thead>
-  ),
+  thead: ({ children }) => <thead className="border-b-2 border-slate-900">{children}</thead>,
   tbody: ({ children }) => <tbody>{children}</tbody>,
   tr: ({ children }) => (
-    <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-    {children}
-  </tr>
+    <tr className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50">{children}</tr>
   ),
   th: ({ children }) => (
-    <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wide text-gray-500 whitespace-nowrap">
-    {children}
-  </th>
+    <th className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-slate-600">{children}</th>
   ),
-  td: ({ children }) => (
-    <td className="px-4 py-3 text-gray-800 tabular-nums">{children}</td>
-  ),hr: () => <hr className="my-8 border-gray-200" />,
-  strong: ({ children }) => <strong className="font-bold text-gray-900">{children}</strong>,
-  em: ({ children }) => <em className="italic text-gray-700">{children}</em>,
+  td: ({ children }) => <td className="px-4 py-3 tabular-nums text-slate-800">{children}</td>,
+  hr: () => <hr className="my-10 border-slate-200" />,
+  strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
   a: ({ href, children }) => {
     const isHash = href?.startsWith('#')
     return (
       <a
         href={href}
-        target={isHash ? undefined : "_blank"}
-        rel={isHash ? undefined : "noopener noreferrer"}
-        className="text-red-600 underline underline-offset-2 hover:text-red-700 transition-colors"
+        target={isHash ? undefined : '_blank'}
+        rel={isHash ? undefined : 'noopener noreferrer'}
+        className="font-medium text-red-700 underline decoration-red-300 underline-offset-[3px] transition-colors hover:text-red-800 hover:decoration-red-700"
       >
         {children}
       </a>
     )
   },
-  img: ({ node, className: imgClass = "", ...props }) => {
+  img: ({ node, className: imgClass = '', ...props }) => {
     const { alt, src } = props
-    const match = alt?.match(/^(.+)\\s{caption:(.+?)}$/)
+    // Supports "alt text {caption:Your caption}" (also tolerates a literal "\s" before the brace).
+    const match = alt?.match(/^(.+?)(?:\s|\\s)*\{caption:(.+?)\}$/)
     const imageAlt = match ? match[1].trim() : alt
     const caption = match ? match[2].trim() : null
-    
+
     return (
-      <figure className="my-4 flex flex-col" data-type="image-figure">
-        <img
-          src={src}
-          alt={imageAlt}
-          className={`max-w-full rounded-lg ${imgClass}`}
-        />
+      <figure className="my-8 flex flex-col" data-type="image-figure">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src as string} alt={imageAlt ?? ''} loading="lazy" className={`max-w-full ${imgClass}`} />
         {caption && (
-          <figcaption className="text-sm text-gray-600 mt-2">
+          <figcaption className="mt-2 border-l-2 border-red-600 pl-3 text-sm leading-relaxed text-slate-600">
             {caption}
           </figcaption>
         )}
       </figure>
     )
-  }
+  },
 }
-
-// ── Article Markdown ──────────────────────────────────────────────────────────
 
 function ArticleMarkdown({ content, dbBlocks }: { content: string; dbBlocks: DBBlockConfig[] }) {
   return (
     <Markdown
       remarkPlugins={[remarkGfm, remarkMath, [createCustomBlockPlugin, dbBlocks] as any]}
-      rehypePlugins={[rehypeRaw, rehypeKatex, [rehypeMermaid, {strategy:'pre-mermaid'}]]}
+      rehypePlugins={[rehypeRaw, rehypeKatex, [rehypeMermaid, { strategy: 'pre-mermaid' }]]}
       components={mdComponents}
     >
       {content}
@@ -227,31 +221,35 @@ function ArticleMarkdown({ content, dbBlocks }: { content: string; dbBlocks: DBB
   )
 }
 
-// ── Reading progress bar ───────────────────────────────────────────────────────
+/* ------------------------------------------------------------------ */
+/* Reading progress (measures the article body, not the whole page)    */
+/* ------------------------------------------------------------------ */
 
-function useReadingProgress(ref: React.RefObject < HTMLElement | null > ) {
+function useReadingProgress(ref: React.RefObject<HTMLElement | null>) {
   const [progress, setProgress] = useState(0)
-  
+
   useEffect(() => {
     const onScroll = () => {
       const el = ref.current
       if (!el) return
       const { top, height } = el.getBoundingClientRect()
-      const total = height - window.innerHeight
-      const scrolled = Math.max(0, -top)
+      const total = height - window.innerHeight * 0.6
+      const scrolled = Math.max(0, -top + window.innerHeight * 0.4)
       setProgress(total > 0 ? Math.min(100, (scrolled / total) * 100) : 0)
     }
+    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [ref])
-  
+
   return progress
 }
 
-// ── Share dropdown ─────────────────────────────────────────────────────────────
+/* ------------------------------------------------------------------ */
+/* Share menu                                                          */
+/* ------------------------------------------------------------------ */
 
-interface ShareDropdownProps {
-  article: NewsArticle
+interface ShareMenuProps {
   copied: boolean
   onCopy: () => void
   onTwitter: () => void
@@ -259,117 +257,116 @@ interface ShareDropdownProps {
   onLinkedin: () => void
 }
 
-function ShareDropdown({ article, copied, onCopy, onTwitter, onFacebook, onLinkedin }: ShareDropdownProps) {
+function ShareMenu({ copied, onCopy, onTwitter, onFacebook, onLinkedin }: ShareMenuProps) {
+  const item =
+    'flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none'
   return (
-    <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl p-1.5 w-52 z-50">
-      <button
-        onClick={onTwitter}
-        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
-      >
-        <FaTwitter className="w-4.5 h-4.5 text-sky-500 flex-shrink-0" />
-        Share on X / Twitter
+    <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+      <button role="menuitem" onClick={onTwitter} className={item}>
+        <FaTwitter className="h-4 w-4 shrink-0 text-sky-500" aria-hidden /> Share on X / Twitter
       </button>
-      <button
-        onClick={onFacebook}
-        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
-      >
-        <FaFacebook className="w-4.5 h-4.5 text-blue-600 flex-shrink-0" />
-        Share on Facebook
+      <button role="menuitem" onClick={onFacebook} className={item}>
+        <FaFacebook className="h-4 w-4 shrink-0 text-blue-600" aria-hidden /> Share on Facebook
       </button>
-      <button
-        onClick={onLinkedin}
-        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
-      >
-        <FaLinkedinIn className="w-4.5 h-4.5 text-blue-700 flex-shrink-0" />
-        Share on LinkedIn
+      <button role="menuitem" onClick={onLinkedin} className={item}>
+        <FaLinkedinIn className="h-4 w-4 shrink-0 text-blue-700" aria-hidden /> Share on LinkedIn
       </button>
-      <hr className="my-1 border-gray-100" />
-      <button
-        onClick={onCopy}
-        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
-      >
-        {copied
-          ? <Check className="w-4.5 h-4.5 text-green-500 flex-shrink-0" />
-          : <LinkIcon className="w-4.5 h-4.5 flex-shrink-0" />}
+      <hr className="my-1 border-slate-100" />
+      <button role="menuitem" onClick={onCopy} className={item}>
+        {copied ? <Check className="h-4 w-4 shrink-0 text-green-600" aria-hidden /> : <LinkIcon className="h-4 w-4 shrink-0" aria-hidden />}
         {copied ? 'Copied!' : 'Copy link'}
       </button>
     </div>
   )
 }
 
-// ── Sidebar: related item ──────────────────────────────────────────────────────
+/* ------------------------------------------------------------------ */
+/* Sidebar items                                                       */
+/* ------------------------------------------------------------------ */
 
 function RelatedItem({ article, locale = 'bn' }: { article: NewsArticle; locale?: string }) {
   return (
     <Link
       href={`/${locale}/article/${article.slug || article.id}`}
-      className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0 group"
+      className="group flex items-start gap-3 border-b border-slate-100 py-3 last:border-0"
     >
-      <div className="relative w-18 h-14 flex-shrink-0 rounded overflow-hidden bg-gray-100" style={{ width: 72, height: 54 }}>
-        {article.image
-          ? <Image src={article.image} alt={article.title} fill className="object-cover" />
-          : <div className="w-full h-full bg-gray-100" />}
+      <div className="relative h-[54px] w-[72px] shrink-0 overflow-hidden bg-slate-100">
+        {article.image && <Image src={article.image} alt="" fill sizes="72px" className="object-cover" />}
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-red-600 mb-1">
-          {article.category}
-        </p>
-        <h4 className={`${serifFont.className} text-[13px] font-medium leading-snug text-gray-900 group-hover:underline line-clamp-3`}>
+      <div className="min-w-0 flex-1">
+        <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-red-700">{article.category}</p>
+        <h4 className={`${serifFont.className} line-clamp-3 text-sm font-semibold leading-snug text-slate-900 group-hover:underline`}>
           {article.title}
         </h4>
-        <p className="text-[11px] text-gray-400 mt-1">{formatRelativeTime(article.date)}</p>
+        <p className="mt-1 text-xs text-slate-500">{formatRelativeTime(article.date.toString())}</p>
       </div>
     </Link>
   )
 }
 
-// ── Main component ─────────────────────────────────────────────────────────────
+function MostReadItem({ article, rank, locale = 'bn' }: { article: NewsArticle; rank: number; locale?: string }) {
+  return (
+    <Link
+      href={`/${locale}/article/${article.slug || article.id}`}
+      className="group flex gap-4 border-t border-slate-200 py-3.5 first:border-t-0"
+    >
+      <span className="min-w-[28px] text-3xl font-extrabold leading-none text-red-600" style={headingFont}>
+        {toDigitalNumber(rank)}
+      </span>
+      <h4 className="text-[15px] font-semibold leading-snug text-slate-900 group-hover:underline">{article.title}</h4>
+    </Link>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
 
 export default function ArticlePage({
   initialArticle,
   initialRelated,
   initialMostRead,
   initialDbBlocks,
-  slug: propSlug
+  slug: propSlug,
 }: {
-  initialArticle?: NewsArticle,
-  initialRelated?: NewsArticle[],
-  initialMostRead?: NewsArticle[],
-  initialDbBlocks?: DBBlockConfig[],
+  initialArticle?: NewsArticle
+  initialRelated?: NewsArticle[]
+  initialMostRead?: NewsArticle[]
+  initialDbBlocks?: DBBlockConfig[]
   slug?: string
 }) {
   const params = useParams()
   const locale = (params.locale as string) || 'bn'
   const slug = (params.slug as string) || propSlug
-  
-  const [article, setArticle] = useState < NewsArticle | null > (initialArticle || null)
-  const [relatedArticles, setRelatedArticles] = useState < NewsArticle[] > (initialRelated || [])
-  const [mostRead, setMostRead] = useState < NewsArticle[] > (initialMostRead || [])
-  const [dbBlocks, setDbBlocks] = useState < DBBlockConfig[] > (initialDbBlocks || [])
+
+  const [article, setArticle] = useState<NewsArticle | null>(initialArticle || null)
+  const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>(initialRelated || [])
+  const [mostRead, setMostRead] = useState<NewsArticle[]>(initialMostRead || [])
+  const [dbBlocks, setDbBlocks] = useState<DBBlockConfig[]>(initialDbBlocks || [])
   const [isLoading, setIsLoading] = useState(!initialArticle)
   const [copied, setCopied] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
-  
-  const shareRef = useRef < HTMLDivElement > (null)
-  const mainRef = useRef < HTMLDivElement > (null)
-  const progress = useReadingProgress(mainRef)
 
-  // Render mermaid diagrams on the client side
+  const shareRef = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLElement>(null)
+  const progress = useReadingProgress(bodyRef)
+
+  // Mermaid diagrams (client side)
   useEffect(() => {
     if (typeof window !== 'undefined' && article?.content) {
       import('mermaid')
         .then((m) => {
-          m.default.initialize({ startOnLoad: true, theme: 'default' });
+          m.default.initialize({ startOnLoad: true, theme: 'default' })
           setTimeout(() => {
-            m.default.run().catch((err) => console.error('Mermaid rendering error:', err));
-          }, 100);
+            m.default.run().catch((err) => console.error('Mermaid rendering error:', err))
+          }, 100)
         })
-        .catch((err) => console.error('Failed to dynamically load mermaid:', err));
+        .catch((err) => console.error('Failed to dynamically load mermaid:', err))
     }
-  }, [article?.content]);
-  
-  // Update state if initial props change
+  }, [article?.content])
+
+  // Sync props / fetch by slug
   useEffect(() => {
     if (initialArticle) {
       setArticle(initialArticle)
@@ -377,13 +374,11 @@ export default function ArticlePage({
     } else if (slug) {
       setIsLoading(true)
       fetch(`/api/articles/slug/${slug}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && !data.error) {
-            setArticle(data)
-          }
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && !data.error) setArticle(data)
         })
-        .catch(err => console.error("Error fetching article:", err))
+        .catch((err) => console.error('Error fetching article:', err))
         .finally(() => setIsLoading(false))
     }
     if (initialRelated) setRelatedArticles(initialRelated)
@@ -394,96 +389,137 @@ export default function ArticlePage({
   useEffect(() => {
     if (dbBlocks.length === 0 && !initialDbBlocks) {
       fetch('/api/blocks?user=1')
-        .then(r => r.ok ? r.json() : [])
-        .then(data => Array.isArray(data) ? setDbBlocks(data) : null)
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data) => (Array.isArray(data) ? setDbBlocks(data) : null))
         .catch(() => null)
     }
   }, [dbBlocks.length, initialDbBlocks])
-  
-  // Close share dropdown on outside click
+
+  // Bookmark persists per article in this browser
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
-        setShareOpen(false)
-      }
+    if (!article) return
+    try {
+      const saved: string[] = JSON.parse(localStorage.getItem('saved-articles') || '[]')
+      setBookmarked(saved.includes(String(article.id)))
+    } catch {
+      /* ignore */
     }
-    if (shareOpen) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [article])
+
+  const toggleBookmark = useCallback(() => {
+    if (!article) return
+    setBookmarked((prev) => {
+      const next = !prev
+      try {
+        const saved: string[] = JSON.parse(localStorage.getItem('saved-articles') || '[]')
+        const id = String(article.id)
+        const updated = next ? Array.from(new Set([...saved, id])) : saved.filter((s) => s !== id)
+        localStorage.setItem('saved-articles', JSON.stringify(updated))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }, [article])
+
+  // Close share menu on outside click or Escape
+  useEffect(() => {
+    if (!shareOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) setShareOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShareOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [shareOpen])
-  
-  // Share handlers
+
   const handleCopyLink = useCallback(async () => {
-    await navigator.clipboard.writeText(window.location.href)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* clipboard blocked: ignore */
+    }
   }, [])
-  
+
   const handleShareTwitter = useCallback(() => {
     const text = encodeURIComponent(article?.title ?? '')
     const url = encodeURIComponent(window.location.href)
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'noopener,noreferrer')
   }, [article])
-  
+
   const handleShareFacebook = useCallback(() => {
     window.open(
       `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,
-      '_blank')
+      '_blank',
+      'noopener,noreferrer'
+    )
   }, [])
-  
+
   const handleShareLinkedin = useCallback(() => {
     const url = encodeURIComponent(window.location.href)
     const title = encodeURIComponent(article?.title ?? '')
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`, '_blank')
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`, '_blank', 'noopener,noreferrer')
   }, [article])
-  
+
   const handleNativeShare = useCallback(async () => {
-    if (navigator.share) {
-      await navigator.share({ title: article?.title, text: article?.description, url: window.location
-          .href })
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: article?.title, text: article?.description, url: window.location.href })
+      } catch {
+        /* user cancelled the share sheet */
+      }
     } else {
       setShareOpen((prev) => !prev)
     }
   }, [article])
-  
-  const handlePrint = () => window.print()
-  
+
+  /* ---------------- loading / not found ---------------- */
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
-        <div className="flex-1 h-full flex items-center justify-center">
-          <PinwheelLoader size={100} color='#A8A8A8' />
+        <div className="flex h-full flex-1 items-center justify-center">
+          <PinwheelLoader size={100} color="#A8A8A8" />
         </div>
       </div>
     )
   }
-  
+
   if (!article) {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
+      <div className="flex min-h-screen flex-col bg-white">
         <Header />
-        <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <Link href={`/${locale}`} className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 mb-8 text-sm font-medium">
-            <ArrowLeft className="w-4.5 h-4.5" /> Back to News
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-16 sm:px-6 lg:px-8">
+          <Link href={`/${locale}`} className="mb-8 inline-flex min-h-[44px] items-center gap-2 text-sm font-medium text-red-700 hover:text-red-800">
+            <ArrowLeft className="h-4 w-4" aria-hidden /> Back to News
           </Link>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">Article Not Found</h1>
-            <p className="text-gray-500">The article you're looking for doesn't exist or has been removed.</p>
+            <h1 className="mb-3 text-3xl font-bold text-slate-900">Article Not Found</h1>
+            <p className="text-slate-600">The article you&apos;re looking for doesn&apos;t exist or has been removed.</p>
           </div>
         </main>
         <Footer />
       </div>
     )
   }
-  
-  const readTime = estimateReadTime(article.content)
-  const authorSlug = toAuthorSlug(article.author)
-  const authorInitialsStr = authorInitials(article.author)
-  
-  return (
-    <div className="min-h-screen bg-white flex flex-col" ref={mainRef}>
 
-      {/* Print styles */}
+  const readTime = estimateReadTime(article.content)
+  const categoryHref = `/${locale}/category/${encodeURIComponent(article.category)}`
+  const showHero = Boolean(article.image) && !hasFirstImage(article.content)
+  const iconBtn =
+    'inline-flex min-h-[44px] items-center gap-2 rounded-full border border-slate-300 px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
+
+  return (
+    <div className="flex min-h-screen flex-col bg-white">
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -493,247 +529,167 @@ export default function ArticlePage({
 
       <Header />
 
-      {/* ── Reading progress bar ── */}
-      <div className="no-print sticky top-0 left-0 right-0 h-0.5 bg-gray-50 z-50">
-        <div
-          className="h-full bg-black transition-all duration-100 ease-linear"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      {/* ── Sticky top bar ── */}
-      <div className="no-print sticky top-0.5 bg-white border-b border-gray-100 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-11 flex items-center justify-between gap-4">
-
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-xs text-gray-400 min-w-0">
-            <Link href={`/${locale}`} className="hover:text-gray-600 transition-colors shrink-0">Home</Link>
-            <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-            <Link href={`/${locale}/category/${article.category}`} className="hover:text-gray-600 transition-colors shrink-0 capitalize">
-              {article.category}
-            </Link>
-            <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate text-gray-500">{article.title}</span>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Listen (decorative) */}
-            <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
-              <Volume2 className="w-4 h-4" />
-              Listen
-            </button>
-
-            {/* Bookmark */}
-            <button
-              onClick={() => setBookmarked((b) => !b)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                bookmarked
-                  ? 'border-red-200 bg-red-50 text-red-600'
-                  : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-              }`}
-            >
-              {bookmarked ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
-              <span className="hidden sm:inline">{bookmarked ? 'Saved' : 'Save'}</span>
-            </button>
-
-            {/* Print */}
-            <button
-              onClick={handlePrint}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
-            >
-              <Printer className="w-4 h-4" />
-              Print
-            </button>
-
-            {/* Share */}
-            <div className="relative" ref={shareRef}>
-              <button
-                onClick={handleNativeShare}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
-              >
-                <Share2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Share</span>
-              </button>
-              {shareOpen && (
-                <ShareDropdown
-                  article={article}
-                  copied={copied}
-                  onCopy={handleCopyLink}
-                  onTwitter={handleShareTwitter}
-                  onFacebook={handleShareFacebook}
-                  onLinkedin={handleShareLinkedin}
-                />
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Reading progress, fixed to the viewport top */}
+      <div className="no-print fixed left-0 right-0 top-0 z-[60] h-1 bg-transparent" role="progressbar" aria-label="Reading progress" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
+        <div className="h-full bg-red-600 transition-[width] duration-100 ease-linear" style={{ width: `${progress}%` }} />
       </div>
 
       <main className="flex-1">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex gap-10 xl:gap-14 items-start">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+          <div className="flex items-start gap-10 xl:gap-14">
+            {/* ═════════ Article column ═════════ */}
+            <div className="print-content min-w-0 flex-1">
+              {/* Breadcrumb */}
+              <nav aria-label="Breadcrumb" className="no-print mb-5 flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
+                <Link href={`/${locale}`} className="shrink-0 hover:text-slate-900">Home</Link>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <Link href={categoryHref} className="shrink-0 capitalize hover:text-slate-900">{article.category}</Link>
+              </nav>
 
-            {/* ════════════════════ ARTICLE COLUMN ════════════════════ */}
-            <div className="flex-1 min-w-0 print-content">
-
-              {/* Category + badges */}
-              <div className="flex items-center gap-2 mb-4 flex-wrap">
+              {/* Kicker + badges */}
+              <div className="mb-4 flex flex-wrap items-center gap-2">
                 <Link
-                  href={`/${locale}/category/${article.category}`}
-                  className="text-[10px] font-semibold text-red-600 uppercase tracking-wider py-1 hover:bg-red-50 transition-colors rounded"
+                  href={categoryHref}
+                  className="border-l-4 border-red-600 pl-2 text-xs font-extrabold uppercase tracking-wider text-red-700 hover:underline"
                 >
                   {article.category}
                 </Link>
                 {article.breaking && (
-                  <span className="bg-red-600 text-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-sm">
-                    Breaking
-                  </span>
+                  <span className="bg-red-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-white">Breaking</span>
                 )}
                 {article.trending && (
-                  <span className="flex items-center gap-1.5 text-[10px] font-semibold text-orange-600 uppercase tracking-wider border border-orange-200 px-2.5 py-1 rounded-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                  <span className="flex items-center gap-1.5 border border-orange-300 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-orange-700">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-500" aria-hidden />
                     Trending
                   </span>
                 )}
               </div>
 
               {/* Headline */}
-              <h1 className={` text-3xl md:text-4xl font-bold text-gray-900 leading-tight`} style = {{
-              fontFamily: "var(--font-serif) , var(--font-bangla-logo)"}}>
+              <h1 className="text-[32px] font-extrabold leading-[1.25] text-slate-900 md:text-[44px]" style={headingFont}>
                 {article.title}
               </h1>
 
-              {/* Standfirst / description */}
-              <p className="text-md text-gray-600 leading-relaxed mb-2">
-                {article.description.length > 120 ? (
-                  <>
-                    {article.description.slice(0, 120)}...{' '}
-                    <Link href={`/${locale}`} className="px-2 underline hover:text-red-600">
-                      Read more
-                    </Link>
-                  </>
-                ) : (
-                  article.description
-                )}
-              </p>
+              {/* Standfirst: shown in full */}
+              {article.description && (
+                <p className="mt-4 text-lg leading-relaxed text-slate-600 md:text-xl">{article.description}</p>
+              )}
 
-              {/* ── Author + meta row (NO BORDER) ── */}
-              <div className="flex items-center justify-between gap-4 py-3 mb-6 flex-wrap">
-                <div className="flex items-center gap-2">
-                  {/* Author Avatar */}
-                  <Link href={`/${authorSlug}`} className="flex-shrink-0">
-                    <div className="w-6 h-6 rounded-full bg-gray-300">
-                    
-                    </div>
+              {/* Byline */}
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-y border-slate-200 py-4">
+                <div className="flex items-center gap-3">
+                  <Link
+                    href={`/${locale}/author/${article.author_id}`}
+                    aria-label={article.author}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white"
+                  >
+                    {authorInitials(article.author)}
                   </Link>
-                  {/* Author Name */}
-                  <div>
-                    <Link 
+                  <div className="leading-tight">
+                    <Link
                       href={`/${locale}/author/${article.author_id}`}
-                      className={serifFont.className + "  text-sm text-gray-900 hover:text-red-600 transition-colors font-bold"}
+                      className={`${serifFont.className} text-[15px] font-bold text-slate-900 hover:text-red-700`}
                     >
-                      by {article.author}
+                      {article.author}
                     </Link>
+                    <p className="mt-1 text-xs text-slate-500">
+                      <time dateTime={new Date(article.date).toISOString()} title={formatFullDate(article.date.toString())}>
+                        {formatRelativeTime(article.date.toString())}
+                      </time>
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4" />
-                    {readTime} min read
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Eye className="w-4 h-4" />
-                    {toDigitalNumber(article.views ?? 0)}
-                  </span>
-                  <span className="text-gray-300">·</span>
-                  <span className="text-gray-400">{formatRelativeTime(article.date.toString())}</span>
+                <div className="flex items-center gap-4 text-xs text-slate-500">
+                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" aria-hidden />{readTime} min read</span>
+                  <span className="flex items-center gap-1.5"><Eye className="h-4 w-4" aria-hidden />{toDigitalNumber(article.views ?? 0)}</span>
                 </div>
               </div>
 
-              {/* ── Hero image ── */}
-              {!hasFirstImage(article.content) || article.image.length > 0 && (
-                <div className="mb-8">
-                  <div className="relative w-full aspect-video overflow-hidden bg-gray-100">
+              {/* Actions */}
+              <div className="no-print mt-4 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={toggleBookmark}
+                  aria-pressed={bookmarked}
+                  className={`${iconBtn} ${bookmarked ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-50' : ''}`}
+                >
+                  {bookmarked ? <BookmarkCheck className="h-4 w-4" aria-hidden /> : <Bookmark className="h-4 w-4" aria-hidden />}
+                  {bookmarked ? 'Saved' : 'Save'}
+                </button>
+                <button onClick={() => window.print()} className={`${iconBtn} hidden sm:inline-flex`}>
+                  <Printer className="h-4 w-4" aria-hidden /> Print
+                </button>
+                <div className="relative" ref={shareRef}>
+                  <button onClick={handleNativeShare} aria-haspopup="menu" aria-expanded={shareOpen} className={iconBtn}>
+                    <Share2 className="h-4 w-4" aria-hidden /> Share
+                  </button>
+                  {shareOpen && (
+                    <ShareMenu
+                      copied={copied}
+                      onCopy={handleCopyLink}
+                      onTwitter={handleShareTwitter}
+                      onFacebook={handleShareFacebook}
+                      onLinkedin={handleShareLinkedin}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Hero image */}
+              {showHero && (
+                <figure className="mt-6">
+                  <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
                     <Image
                       src={article.image}
                       alt={article.title}
-                      placeholder='blur'
                       fill
-                      className="object-cover"
                       priority
+                      sizes="(min-width: 1024px) 720px, 100vw"
+                      className="object-cover"
                     />
                   </div>
                   {article.imageCaption && (
-                    <p className="text-xs text-gray-400 mt-3 leading-relaxed italic">
+                    <figcaption className="mt-2 border-l-2 border-red-600 pl-3 text-sm leading-relaxed text-slate-600">
                       {article.imageCaption}
-                    </p>
+                    </figcaption>
                   )}
-                </div>
+                </figure>
               )}
 
-              {/* ── Article body ── */}
-              <article className="py-6 pt-3 overflow-hidden break-words [&>p:first-of-type]:first-letter:float-left [&>p:first-of-type]:first-letter:text-5xl [&>p:first-of-type]:first-letter:font-bold [&>p:first-of-type]:first-letter:mr-3 [&>p:first-of-type]:first-letter:px-2 [&>p:first-of-type]:first-letter:mt-2">
+              {/* Body: constrained to a comfortable reading width */}
+              <article ref={bodyRef} className="mx-auto max-w-[44rem] break-words pb-6 pt-2 lg:mx-0">
                 <ArticleMarkdown content={article.content} dbBlocks={dbBlocks} />
               </article>
 
-              {/* ── Engagement (Likes/Dislikes) ── */}
-              <div className="no-print py-8 border-y border-gray-100 mb-8">
-                <div className="flex flex-col gap-4">
-                  <p className="text-sm text-gray-400 uppercase tracking-widest">What do you think?</p>
-                  <ReactionButtons articleId={article.id} />
-                </div>
+              {/* Reactions */}
+              <div className="no-print my-8 border-y border-slate-200 py-8">
+                <p className="mb-4 text-sm font-bold uppercase tracking-widest text-slate-600">What do you think?</p>
+                <ReactionButtons articleId={article.id} />
               </div>
 
-              {/* ── Comments Section ── */}
+              {/* Bottom share bar */}
+              <div className="no-print mb-12 flex flex-wrap items-center gap-3">
+                <span className="text-sm font-bold uppercase tracking-widest text-slate-900">Share</span>
+                <button onClick={handleShareTwitter} aria-label="Share on X / Twitter" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"><FaTwitter className="h-4 w-4" aria-hidden /></button>
+                <button onClick={handleShareFacebook} aria-label="Share on Facebook" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"><FaFacebook className="h-4 w-4" aria-hidden /></button>
+                <button onClick={handleShareLinkedin} aria-label="Share on LinkedIn" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"><FaLinkedinIn className="h-4 w-4" aria-hidden /></button>
+                <button onClick={handleCopyLink} aria-label="Copy link" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900">
+                  {copied ? <Check className="h-4 w-4 text-green-600" aria-hidden /> : <LinkIcon className="h-4 w-4" aria-hidden />}
+                </button>
+              </div>
+
+              {/* Comments */}
               <div className="no-print mb-16" id="comments">
                 <CommentsSection articleId={article.id} />
               </div>
 
-              {/* ── Bottom share bar ── */}
-              <div className="no-print pt-6 pb-4 border-t border-gray-100">
-                <div className="flex w-full items-center gap-4">
-                  <span className="text-sm font-medium text-gray-900 tracking-widest whitespace-nowrap">Share it</span>
-                  <div className="flex flex-1 items-center justify-between gap-2 rounded-full w-full p-1">
-                    <button
-                      onClick={handleShareTwitter}
-                      className="flex items-center gap-1.5 p-2 text-gray-600 hover:bg-gray-50 rounded-full transition-colors"
-                      title="Share on X/Twitter"
-                    >
-                      <FaTwitter className="w-4.5 h-4.5" />
-                    </button>
-                    <button
-                      onClick={handleShareFacebook}
-                      className="flex items-center gap-1.5 p-2 text-gray-600 hover:bg-gray-50 rounded-full transition-colors"
-                      title="Share on Facebook"
-                    >
-                      <FaFacebook className="w-4.5 h-4.5" />
-                    </button>
-                    <button
-                      onClick={handleShareLinkedin}
-                      className="flex items-center gap-1.5 p-2 text-gray-600 hover:bg-gray-50 rounded-full transition-colors"
-                      title="Share on LinkedIn"
-                    >
-                      <FaLinkedinIn className="w-4.5 h-4.5" />
-                    </button>
-                    <button
-                      onClick={handleCopyLink}
-                      className="flex items-center gap-1.5 p-2 text-gray-600 hover:bg-gray-50 rounded-full transition-colors"
-                      title="Copy link"
-                    >
-                      {copied ? <Check className="w-4.5 h-4.5 text-green-500" /> : <LinkIcon className="w-4.5 h-4.5" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Related articles (grid) ── */}
+              {/* More in category */}
               {relatedArticles.length > 0 && (
-                <section className="no-print mt-16 pt-8 border-t border-gray-100">
-                  <h2 className={`${serifFont.className} text-lg font-bold tracking-widest text-gray-900 mb-6`}>
+                <section className="no-print border-t-4 border-slate-900 pt-3" aria-labelledby="more-in">
+                  <h2 id="more-in" className="mb-6 flex items-center gap-3 text-2xl font-extrabold text-slate-900">
+                    <span aria-hidden className="inline-block h-6 w-2 bg-red-600" />
                     More in {article.category}
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {relatedArticles.slice(0, 3).map((a) => (
                       <NewsCard key={a.id} article={a} variant="default" locale={locale} />
                     ))}
@@ -742,63 +698,64 @@ export default function ArticlePage({
               )}
             </div>
 
-            {/* ════════════════════ SIDEBAR ════════════════════ */}
-            <aside className="no-print hidden lg:flex flex-col gap-8 w-72 xl:w-80 flex-shrink-0">
-
-              {/* Most read */}
+            {/* ═════════ Sidebar ═════════ */}
+            <aside className="no-print hidden w-72 shrink-0 flex-col gap-10 lg:flex xl:w-80">
               {mostRead.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-900 border-b border-gray-200 pb-3 mb-4">
+                <section aria-labelledby="most-read" className="bg-slate-50 p-5">
+                  <h3 id="most-read" className="mb-2 flex items-center gap-2 text-lg font-extrabold text-slate-900">
+                    <span aria-hidden className="inline-block h-5 w-1.5 bg-red-600" />
                     Most Read
                   </h3>
-                  <div className="space-y-2">
-                    {mostRead.slice(0, 5).map((a) => (
-                      <RelatedItem key={a.id} article={a} locale={locale} />
+                  <div>
+                    {mostRead.slice(0, 5).map((a, i) => (
+                      <MostReadItem key={a.id} article={a} rank={i + 1} locale={locale} />
                     ))}
                   </div>
-                </div>
+                </section>
               )}
 
-              {/* Newsletter sign-up */}
-              <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-widest text-red-600 mb-2">Newsletter</p>
-                <h4 className="text-sm font-semibold text-gray-900 mb-3 leading-snug">
-                  Stay informed daily
-                </h4>
-                <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-                  Get our best stories delivered to your inbox every morning.
-                </p>
-                <div className="space-y-2">
+              {/* Newsletter (form is a placeholder: wire to your subscribe endpoint) */}
+              <section aria-labelledby="newsletter" className="bg-slate-900 p-6 text-white">
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-red-400">Newsletter</p>
+                <h3 id="newsletter" className="mb-2 text-lg font-bold leading-snug" style={headingFont}>Stay informed daily</h3>
+                <p className="mb-4 text-sm leading-relaxed text-slate-300">Our best stories, delivered to your inbox every morning.</p>
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-2">
+                  <label htmlFor="nl-email" className="sr-only">Email address</label>
                   <input
+                    id="nl-email"
                     type="email"
+                    required
                     placeholder="your@email.com"
-                    className="w-full text-sm px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 bg-white text-gray-900 placeholder-gray-400 transition-all"
+                    className="min-h-[44px] w-full border border-slate-600 bg-slate-800 px-3 text-sm text-white placeholder-slate-400 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/40"
                   />
-                  <button className="w-full text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 py-2.5 rounded-xl transition-all shadow-sm">
-                    Subscribe Free
+                  <button
+                    type="submit"
+                    className="min-h-[44px] w-full bg-red-600 text-sm font-bold text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    Subscribe free
                   </button>
-                </div>
-              </div>
+                </form>
+              </section>
 
-              {/* On this topic */}
               {relatedArticles.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-900 border-b border-gray-200 pb-3 mb-4">
-                    Related Articles
+                <section aria-labelledby="related">
+                  <h3 id="related" className="mb-3 flex items-center gap-2 border-t-4 border-slate-900 pt-2 text-lg font-extrabold text-slate-900">
+                    <span aria-hidden className="inline-block h-5 w-1.5 bg-red-600" />
+                    Related
                   </h3>
-                  <div className="space-y-2 mb-4">
+                  <div className="mb-3">
                     {relatedArticles.slice(0, 3).map((a) => (
                       <RelatedItem key={a.id} article={a} locale={locale} />
                     ))}
                   </div>
                   <Link
-                    href={`/${locale}/category/${article.category}`}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                    href={categoryHref}
+                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-red-700 hover:text-red-800"
                   >
                     See all {article.category} stories
-                    <ChevronRight className="w-4.5 h-4.5" />
+                    <ChevronRight className="h-4 w-4" aria-hidden />
                   </Link>
-                </div>
+                </section>
               )}
             </aside>
           </div>
