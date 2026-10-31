@@ -196,21 +196,28 @@ export const customBlockComponents = {
       </div>
     )
   },
-  reference: (props: any) => (
-    <div className="my-4 p-4 bg-gray-50 border border-gray-100 rounded-none flex items-start gap-3">
-      <Book size={16} className="text-gray-400 mt-1 shrink-0" />
-      <div className="text-xs text-gray-600 italic">
-        <span className="font-bold text-gray-900 not-italic">{props.author}</span> {props.year ? `(${props.year})` : ''}.
-        {props.url ? (
-          <a href={props.url} target="_blank" rel="noopener noreferrer" className="mx-1 text-blue-600 hover:underline">
-            {props.text}
-          </a>
-        ) : (
-          <span className="mx-1">{props.text}</span>
-        )}
+  reference: (props: any) => {
+    const text = props.text || props.title || 'Source Reference'
+    const author = props.author || ''
+    const year = props.year || ''
+    const url = props.url || ''
+    return (
+      <div className="my-4 p-4 bg-gray-50 border border-gray-200 rounded-none flex items-start gap-3">
+        <Book size={16} className="text-gray-500 mt-1 shrink-0" />
+        <div className="text-xs text-gray-600">
+          {author && <span className="font-bold text-gray-900 not-italic mr-1">{author}</span>}
+          {year && <span className="text-gray-500 mr-1">({year}).</span>}
+          {url ? (
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-neutral-900 underline font-medium hover:text-black">
+              {text}
+            </a>
+          ) : (
+            <span className="text-gray-800 font-medium">{text}</span>
+          )}
+        </div>
       </div>
-    </div>
-  ),
+    )
+  },
   tika: (props: any) => (
     <div className="my-4 p-4 bg-yellow-50/50 border-l-4 border-yellow-400 rounded-none flex items-start gap-3">
       <StickyNote size={16} className="text-yellow-600 mt-1 shrink-0" />

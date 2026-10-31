@@ -26,7 +26,7 @@ import {
   Monitor, Tablet, Smartphone, Search, X, Check, CheckCircle2, AlertCircle, Loader2,
   Send, Settings, SearchCheck, Accessibility, Tag, Share2, Star, Zap, TrendingUp, Clock,
   ArrowUp, ArrowDown, Copy, Trash2, Sparkles, Box, Columns2, Twitter, Facebook,
-  Instagram, Youtube, Github, ImagePlus,
+  Instagram, Youtube, Github, ImagePlus, Book,
 } from 'lucide-react'
 import { createCustomBlockPlugin, blockRegistry, DBBlockConfig } from '@/lib/mdx/block-registry'
 import '@/lib/mdx/blocks'
@@ -45,7 +45,7 @@ type Device = 'desktop' | 'tablet' | 'mobile'
 type Visibility = 'public' | 'private' | 'unlisted'
 type ArticleStatus = 'draft' | 'published' | 'scheduled'
 type SaveStatus = 'saved' | 'dirty' | 'saving' | 'error'
-type BlockType = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'quote' | 'code' | 'mermaid' | 'math' | 'hr' | 'image' | 'table' | 'custom' | 'html'
+type BlockType = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'quote' | 'code' | 'mermaid' | 'math' | 'hr' | 'image' | 'table' | 'reference' | 'custom' | 'html'
 type ConvertType = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'quote' | 'code'
 type Block = { id: string; text: string }
 
@@ -75,7 +75,7 @@ const RING = 'ring-2 ring-neutral-900'
 const TYPE_LABEL: Record<BlockType, string> = {
   p: 'Paragraph', h1: 'Heading 1', h2: 'Heading 2', h3: 'Heading 3', ul: 'List', ol: 'Numbered list',
   quote: 'Quote', code: 'Code', mermaid: 'Diagram', math: 'Math', hr: 'Divider', image: 'Image',
-  table: 'Table', custom: 'Embed', html: 'HTML',
+  table: 'Table', reference: 'Reference', custom: 'Embed', html: 'HTML',
 }
 
 const CONVERT_OPTIONS: { value: ConvertType; label: string }[] = [
@@ -103,6 +103,7 @@ const CORE_BLOCKS: LibItem[] = [
   { id: 'mermaid', label: 'Diagram', icon: Workflow, text: '```mermaid\ngraph TD\n  A[Start] --> B[Finish]\n```', caret: 11, group: 'Media' },
   { id: 'code', label: 'Code', icon: Code, text: '```js\n\n```', caret: 6, group: 'Advanced' },
   { id: 'math', label: 'Math', icon: Sigma, text: '$$\n\n$$', caret: 3, group: 'Advanced' },
+  { id: 'reference', label: 'Reference', icon: Book, text: '[!reference(text="Source Title" url="https://" author="Author Name" year="2024")]', group: 'Advanced' },
   { id: 'hr', label: 'Divider', icon: Minus, text: '---', group: 'Advanced' },
 ]
 
@@ -148,13 +149,14 @@ function detectType(t: string): BlockType {
   if (/^(---|\*\*\*|___)\s*$/.test(s)) return 'hr'
   if (/^!\[/.test(s)) return 'image'
   if (s.startsWith('|')) return 'table'
+  if (/^\[!reference\b/i.test(s)) return 'reference'
   if (/^\[!/.test(s)) return 'custom'
   if (s.startsWith('<')) return 'html'
   return 'p'
 }
 
 const MULTILINE: BlockType[] = ['code', 'mermaid', 'math', 'table', 'html']
-const RICH: BlockType[] = ['mermaid', 'math', 'table', 'custom', 'image', 'html']
+const RICH: BlockType[] = ['mermaid', 'math', 'table', 'reference', 'custom', 'image', 'html']
 
 function convertText(text: string, t: ConvertType): string {
   let s = text
@@ -497,6 +499,7 @@ const BLOCK_TA: Record<BlockType, string> = {
   math: 'rounded-lg bg-slate-50 p-3 font-mono text-[13px] leading-relaxed text-slate-700',
   table: 'rounded-lg bg-slate-50 p-3 font-mono text-[13px] leading-relaxed text-slate-700',
   html: 'rounded-lg bg-slate-50 p-3 font-mono text-[13px] leading-relaxed text-slate-700',
+  reference: 'rounded-lg bg-neutral-50 p-3 font-mono text-[13px] text-neutral-800',
   custom: 'rounded-lg bg-neutral-100 p-3 font-mono text-[13px] text-neutral-800', image: 'rounded-lg bg-neutral-50 p-3 font-mono text-[13px] text-neutral-700',
   hr: 'text-slate-400',
 }
@@ -798,7 +801,7 @@ const customBlockHighlight = ViewPlugin.fromClass(class {
   update(u: ViewUpdate) { if (u.docChanged || u.viewportChanged) this.decorations = this.build(u.view) }
   build(view: EditorView) {
     const builder = new RangeSetBuilder<Decoration>()
-    const regex = /\[!.+?\(url=".+?"\)\]/g
+    const regex = /\[!.+?\([\s\S]*?\)\]/g
     const text = view.state.doc.toString()
     let m
     while ((m = regex.exec(text)) !== null) builder.add(m.index, m.index + m[0].length, Decoration.mark({ class: 'cm-custom-block' }))

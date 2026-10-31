@@ -319,15 +319,27 @@ blockRegistry.register({
   name: 'reference',
   label: 'Reference',
   icon: 'book',
-  pattern: /\[!reference\s*\(([\s\S]*?)\)\s*\]/,
+  pattern: /\[!reference\s*\(([\s\S]*?)\)\s*\]/i,
   template: '[!reference(text="Source Title" url="https://" author="Author Name" year="2024")]',
   handler: (match) => {
-    const params = parseBlockParams(match[1] || '')
+    const rawParams = match[1] || ''
+    const params = parseBlockParams(rawParams)
+    // Support title as alias for text
+    const text = params.text || params.title || 'Source Reference'
+    const author = params.author || ''
+    const year = params.year || ''
+    const url = params.url || ''
+
     return {
       type: 'reference',
       hName: 'reference',
       hProperties: {
         className: 'custom-block reference-block',
+        text,
+        title: text,
+        author,
+        year,
+        url,
         ...params,
       },
     }
