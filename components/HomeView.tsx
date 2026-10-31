@@ -36,8 +36,8 @@ const SECTION_ACCENT: Record<string, string> = {
 
 const POSITIONS = [
   { x: 0, scale: 1, opacity: 1, z: 30, shadow: '0 20px 40px -12px rgba(15,23,42,0.35)' },
-  { x: 210, scale: 0.82, opacity: 0.55, z: 20, shadow: '0 10px 24px -10px rgba(15,23,42,0.25)' },
-  { x: -210, scale: 0.82, opacity: 0.55, z: 20, shadow: '0 10px 24px -10px rgba(15,23,42,0.25)' },
+  { x: 175, scale: 0.88, opacity: 0.65, z: 20, shadow: '0 10px 24px -10px rgba(15,23,42,0.25)' },
+  { x: -175, scale: 0.88, opacity: 0.65, z: 20, shadow: '0 10px 24px -10px rgba(15,23,42,0.25)' },
   { x: 0, scale: 0.65, opacity: 0, z: 10, shadow: 'none' },
 ]
 const HIDDEN_POSITION = { x: 0, scale: 0.5, opacity: 0, z: 0, shadow: 'none' }
@@ -223,7 +223,7 @@ function CoverFlowSlider({
             movedRef.current = false
           }
         }}
-        className="relative flex h-[340px] touch-pan-y select-none items-center justify-center overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+        className="relative flex h-[240px] sm:h-[270px] md:h-[300px] touch-pan-y select-none items-center justify-center overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
       >
         {displayArticles.map((article, i) => {
           const p = getPos(i)
@@ -245,7 +245,7 @@ function CoverFlowSlider({
                   : 'transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.45s ease, box-shadow 0.45s ease',
                 pointerEvents: p.opacity === 0 ? 'none' : 'auto',
               }}
-              className="absolute h-full w-[78%] max-w-[340px] cursor-pointer overflow-hidden bg-white"
+              className="absolute h-full w-[90%] sm:w-[86%] max-w-[420px] cursor-pointer overflow-hidden bg-white"
               aria-hidden={!isFocused}
               {...(!isFocused ? ({ inert: '' } as Record<string, string>) : {})}
             >

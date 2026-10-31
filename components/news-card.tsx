@@ -73,7 +73,7 @@ export function NewsCard({ article, variant = 'default', className, locale = 'bn
     return (
       <Link href={href} className="block h-full">
         <div className={`group cursor-pointer overflow-hidden h-full flex flex-col ${className ?? ''}`}>
-          <div className="relative w-full flex-1 overflow-hidden bg-gray-200 min-h-[200px]">
+          <div className="relative w-full flex-1 overflow-hidden bg-gray-200 min-h-[160px]">
             <Image
               src={imageSrc}
               alt={article.title}
@@ -82,19 +82,19 @@ export function NewsCard({ article, variant = 'default', className, locale = 'bn
               className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <span className="inline-block bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 mb-2">
+            <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+              <span className="inline-block bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 mb-1.5 sm:mb-2">
                 {displayCategory}
               </span>
-              <h3 id="post-title" className="text-primary-foreground text-lg font-bold leading-tight line-clamp-3">
+              <h3 id="post-title" className="text-primary-foreground text-base sm:text-lg font-bold leading-snug sm:leading-tight line-clamp-2 sm:line-clamp-3">
                 {article.title}
               </h3>
-              <div className="flex items-center gap-3 mt-2 text-xs text-primary-foreground/80">
-                <span className="font-medium hover:text-white transition-colors">
+              <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-xs text-primary-foreground/80">
+                <span className="font-medium hover:text-white transition-colors truncate max-w-[120px] sm:max-w-none">
                   {article.author}
                 </span>
                 <span>•</span>
-                <span>{formattedDate}</span>
+                <span className="shrink-0">{formattedDate}</span>
               </div>
             </div>
           </div>

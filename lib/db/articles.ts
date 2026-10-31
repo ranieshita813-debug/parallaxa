@@ -101,10 +101,21 @@ export async function getPublishedArticles(): Promise<NewsArticle[]> {
   catch (e) { console.error('getPublishedArticles:', e); return [] }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function getArticleBySlug(slug: string): Promise<NewsArticle | null> {
   try {
     const decodedSlug = decodeURIComponent(slug)
-    const r = await sql`SELECT * FROM articles WHERE slug = ${slug} OR slug = ${decodedSlug} OR id = ${slug} OR id = ${decodedSlug} LIMIT 1`;
+    const isSlugUuid = UUID_REGEX.test(slug)
+    const isDecodedUuid = UUID_REGEX.test(decodedSlug)
+
+    let r
+    if (isSlugUuid || isDecodedUuid) {
+      const validUuid = isSlugUuid ? slug : decodedSlug
+      r = await sql`SELECT * FROM articles WHERE slug = ${slug} OR slug = ${decodedSlug} OR id = ${validUuid}::uuid LIMIT 1`
+    } else {
+      r = await sql`SELECT * FROM articles WHERE slug = ${slug} OR slug = ${decodedSlug} LIMIT 1`
+    }
     return r[0] ? mapRow(r[0]) : null
   }
   catch (e) { console.error('getArticleBySlug:', e); return null }
@@ -112,7 +123,8 @@ export async function getArticleBySlug(slug: string): Promise<NewsArticle | null
 
 export async function getArticleById(id: string): Promise<NewsArticle | null> {
   try {
-    const r = await sql`SELECT * FROM articles WHERE id = ${id} LIMIT 1`;
+    if (!id || !UUID_REGEX.test(id)) return null
+    const r = await sql`SELECT * FROM articles WHERE id = ${id}::uuid LIMIT 1`;
     return r[0] ? mapRow(r[0]) : null
   }
   catch (e) { console.error('getArticleById:', e); return null }
@@ -239,7 +251,10 @@ export async function searchArticles(query: string): Promise<NewsArticle[]> {
 }
 
 export async function incrementArticleViews(id: string): Promise<void> {
-  try { await sql`UPDATE articles SET views = views + 1 WHERE id = ${id}` }
+  try {
+    if (!id || !UUID_REGEX.test(id)) return
+    await sql`UPDATE articles SET views = views + 1 WHERE id = ${id}::uuid`
+  }
   catch (e) { console.error('incrementArticleViews:', e) }
 }
 
