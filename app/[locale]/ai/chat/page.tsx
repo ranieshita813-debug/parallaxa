@@ -28,6 +28,8 @@ import {
   Loader2,
   ChevronDown,
 } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
 import {
   useState,
   useRef,
@@ -479,10 +481,15 @@ export default function ExposerAi() {
       <header className="sticky top-0 z-50 border-b border-neutral-100 bg-white/90 backdrop-blur-md">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 bg-neutral-900 rounded-md flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="text-sm font-semibold text-neutral-800 tracking-tight">Only Hindu</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/logo.png"
+                alt="the Hindu Campus"
+                width={343}
+                height={42}
+                className="h-6 w-auto object-contain"
+              />
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <button

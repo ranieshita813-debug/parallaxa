@@ -189,9 +189,14 @@ export default function SignInPage() {
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center">
           <Link href="/" className="flex items-center gap-2 mb-8">
-            <span className="text-2xl font-bold uppercase tracking-tight text-foreground">
-              Only Hindu
-            </span>
+            <Image
+              src="/logo.png"
+              alt="the Hindu Campus"
+              width={343}
+              height={42}
+              priority
+              className="h-10 w-auto object-contain"
+            />
           </Link>
         </div>
 

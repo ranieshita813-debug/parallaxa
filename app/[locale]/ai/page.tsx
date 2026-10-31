@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Header } from '@/components/header'
 import { ArrowUp, Globe, Paperclip, TrendingUp, Star, Newspaper, Zap, Lightbulb } from 'lucide-react'
 import { useState, useRef, KeyboardEvent, useEffect } from 'react'
@@ -50,9 +51,13 @@ export default function AiInterface() {
 
         {/* Logo + heading */}
         <div className="flex flex-col items-center gap-4 text-center">
-          <span className="text-xl font-bold uppercase tracking-tight text-neutral-900">
-            Only Hindu
-          </span>
+          <Image
+            src="/logo.png"
+            alt="the Hindu Campus"
+            width={343}
+            height={42}
+            className="h-9 w-auto object-contain"
+          />
           <h1 className="text-4xl font-semibold text-neutral-900 tracking-tight">
             What do you want to know?
           </h1>

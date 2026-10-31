@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import {
@@ -49,13 +50,17 @@ export function Footer() {
         {/* Brand & Copyright */}
         <div className="flex items-center gap-3 shrink-0">
           <Link href={`/${locale}`} className="inline-block select-none">
-            <span className={`${banglaFontlogo.className} text-lg font-black text-white`}>
-              অনলি্হিন্দু™
-            </span>
+            <Image
+              src="/logo.png"
+              alt="the Hindu Campus"
+              width={343}
+              height={42}
+              className="h-6 w-auto object-contain brightness-0 invert"
+            />
           </Link>
           <span className="text-slate-600">|</span>
           <p className="text-slate-400 whitespace-nowrap">
-            &copy; {formattedYear} {isBn ? 'অনলি্হিন্দু™। সর্বস্বত্ব সংরক্ষিত।' : 'Only Hindu™. All rights reserved.'}
+            &copy; {formattedYear} {isBn ? 'The Hindu Campus। সর্বস্বত্ব সংরক্ষিত।' : 'The Hindu Campus. All rights reserved.'}
           </p>
         </div>
 
