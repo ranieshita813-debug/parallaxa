@@ -29,7 +29,7 @@ export function CategoryFilter() {
         <div className="flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-hide">
           <Link href={`/${locale}`}>
             <button
-              className={`whitespace-nowrap px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+              className={`whitespace-nowrap px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-full ${
                 pathname === `/${locale}` || pathname === '/'
                   ? 'bg-primary text-primary-foreground'
                   : 'text-gray-700 hover:bg-gray-100'
@@ -42,7 +42,7 @@ export function CategoryFilter() {
           {categories.map((category) => (
             <Link key={category} href={`/${locale}/category/${category}`}>
               <button
-                className={`whitespace-nowrap px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                className={`whitespace-nowrap px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-full ${
                   isActive(category)
                     ? 'bg-primary text-primary-foreground'
                     : 'text-gray-700 hover:bg-gray-100'

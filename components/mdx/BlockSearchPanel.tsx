@@ -87,7 +87,7 @@ export function BlockSearchPanel({ blocks, onInsert, onClose }: BlockSearchPanel
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-none text-[#9e9fa0] hover:text-[#313334] hover:bg-[#f0eeee] transition-colors"
+            className="p-1 rounded-md text-[#9e9fa0] hover:text-[#313334] hover:bg-[#f0eeee] transition-colors"
           >
             <X size={14} />
           </button>
@@ -122,7 +122,7 @@ export function BlockSearchPanel({ blocks, onInsert, onClose }: BlockSearchPanel
             <button
               key={cat.id}
               onClick={() => setCategory(cat.id)}
-              className={`px-2.5 py-1 rounded-none text-[10px] font-semibold transition-all ${
+              className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
                 category === cat.id
                   ? 'bg-[#585f64] text-white'
                   : 'text-[#7a8086] hover:bg-[#eeecec] hover:text-[#313334]'
@@ -140,14 +140,14 @@ export function BlockSearchPanel({ blocks, onInsert, onClose }: BlockSearchPanel
           <button
             onClick={() => setViewMode(v => v === 'grid' ? 'list' : 'grid')}
             title={viewMode === 'grid' ? 'Switch to list' : 'Switch to grid'}
-            className="p-1.5 rounded-none text-[#9e9fa0] hover:bg-[#eeecec] hover:text-[#585f64] transition-colors"
+            className="p-1.5 rounded-md text-[#9e9fa0] hover:bg-[#eeecec] hover:text-[#585f64] transition-colors"
           >
             {viewMode === 'grid' ? <ListIcon size={12} /> : <Grid3x3 size={12} />}
           </button>
           <button
             onClick={() => setSort(s => s === 'label' ? 'name' : 'label')}
             title="Toggle sort"
-            className="p-1.5 rounded-none text-[#9e9fa0] hover:bg-[#eeecec] hover:text-[#585f64] transition-colors"
+            className="p-1.5 rounded-md text-[#9e9fa0] hover:bg-[#eeecec] hover:text-[#585f64] transition-colors"
           >
             <ArrowUpDown size={12} />
           </button>

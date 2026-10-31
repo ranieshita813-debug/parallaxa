@@ -103,7 +103,8 @@ export async function getPublishedArticles(): Promise<NewsArticle[]> {
 
 export async function getArticleBySlug(slug: string): Promise<NewsArticle | null> {
   try {
-    const r = await sql`SELECT * FROM articles WHERE slug = ${slug} LIMIT 1`;
+    const decodedSlug = decodeURIComponent(slug)
+    const r = await sql`SELECT * FROM articles WHERE slug = ${slug} OR slug = ${decodedSlug} OR id = ${slug} OR id = ${decodedSlug} LIMIT 1`;
     return r[0] ? mapRow(r[0]) : null
   }
   catch (e) { console.error('getArticleBySlug:', e); return null }

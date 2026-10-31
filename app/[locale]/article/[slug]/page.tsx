@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { getArticleBySlug, incrementArticleViews, getAllArticles, getArticlesByCategory } from '@/lib/db/articles';
+import { getArticleBySlug, getArticleById, incrementArticleViews, getAllArticles, getArticlesByCategory } from '@/lib/db/articles';
 import { getAllCustomBlocks } from '@/lib/db/blocks';
 import { translateBatch } from '@/lib/trans';
 import ArticlePage from '@/hooks/client/article-page';
@@ -10,7 +10,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string; locale: string }>;
 }): Promise<Metadata> {
   const { slug, locale } = await params;
-  const article = await getArticleBySlug(slug);
+  let article = await getArticleBySlug(slug);
+  if (!article) {
+    article = await getArticleById(slug);
+  }
 
   if (!article) {
     return {
@@ -81,7 +84,10 @@ export default async function ArticlePageOpen({
   params: Promise<{ slug: string; locale: string }>;
 }) {
   const { slug, locale } = await params;
-  const article = await getArticleBySlug(slug);
+  let article = await getArticleBySlug(slug);
+  if (!article) {
+    article = await getArticleById(slug);
+  }
 
   if (!article) {
     return <ArticlePage slug={slug} />;

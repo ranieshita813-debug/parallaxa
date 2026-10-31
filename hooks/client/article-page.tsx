@@ -299,10 +299,10 @@ function ShareDropdown({ article, copied, onCopy, onTwitter, onFacebook, onLinke
 
 // ── Sidebar: related item ──────────────────────────────────────────────────────
 
-function RelatedItem({ article }: { article: NewsArticle }) {
+function RelatedItem({ article, locale = 'bn' }: { article: NewsArticle; locale?: string }) {
   return (
     <Link
-      href={`/article/${article.slug || article.id}`}
+      href={`/${locale}/article/${article.slug || article.id}`}
       className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0 group"
     >
       <div className="relative w-18 h-14 flex-shrink-0 rounded overflow-hidden bg-gray-100" style={{ width: 72, height: 54 }}>
@@ -339,6 +339,7 @@ export default function ArticlePage({
   slug?: string
 }) {
   const params = useParams()
+  const locale = (params.locale as string) || 'bn'
   const slug = (params.slug as string) || propSlug
   
   const [article, setArticle] = useState < NewsArticle | null > (initialArticle || null)
@@ -462,7 +463,7 @@ export default function ArticlePage({
       <div className="min-h-screen bg-white flex flex-col">
         <Header />
         <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <Link href="/" className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 mb-8 text-sm font-medium">
+          <Link href={`/${locale}`} className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 mb-8 text-sm font-medium">
             <ArrowLeft className="w-4.5 h-4.5" /> Back to News
           </Link>
           <div className="text-center">
@@ -506,9 +507,9 @@ export default function ArticlePage({
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs text-gray-400 min-w-0">
-            <Link href="/" className="hover:text-gray-600 transition-colors shrink-0">Home</Link>
+            <Link href={`/${locale}`} className="hover:text-gray-600 transition-colors shrink-0">Home</Link>
             <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-            <Link href={`/category/${article.category}`} className="hover:text-gray-600 transition-colors shrink-0 capitalize">
+            <Link href={`/${locale}/category/${article.category}`} className="hover:text-gray-600 transition-colors shrink-0 capitalize">
               {article.category}
             </Link>
             <ChevronRight className="w-3.5 h-3.5 shrink-0" />
@@ -579,8 +580,8 @@ export default function ArticlePage({
               {/* Category + badges */}
               <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <Link
-                  href={`/category/${article.category}`}
-                  className="text-[10px] font-semibold text-red-600 uppercase tracking-wider py-1  hover:bg-red-50 transition-colors"
+                  href={`/${locale}/category/${article.category}`}
+                  className="text-[10px] font-semibold text-red-600 uppercase tracking-wider py-1 hover:bg-red-50 transition-colors rounded"
                 >
                   {article.category}
                 </Link>
@@ -608,7 +609,7 @@ export default function ArticlePage({
                 {article.description.length > 120 ? (
                   <>
                     {article.description.slice(0, 120)}...{' '}
-                    <Link href="/" className="px-2 underline hover:text-red-600">
+                    <Link href={`/${locale}`} className="px-2 underline hover:text-red-600">
                       Read more
                     </Link>
                   </>
@@ -629,7 +630,7 @@ export default function ArticlePage({
                   {/* Author Name */}
                   <div>
                     <Link 
-                      href={`/author/${article.author_id}`}
+                      href={`/${locale}/author/${article.author_id}`}
                       className={serifFont.className + "  text-sm text-gray-900 hover:text-red-600 transition-colors font-bold"}
                     >
                       by {article.author}
@@ -734,7 +735,7 @@ export default function ArticlePage({
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {relatedArticles.slice(0, 3).map((a) => (
-                      <NewsCard key={a.id} article={a} variant="default" />
+                      <NewsCard key={a.id} article={a} variant="default" locale={locale} />
                     ))}
                   </div>
                 </section>
@@ -752,7 +753,7 @@ export default function ArticlePage({
                   </h3>
                   <div className="space-y-2">
                     {mostRead.slice(0, 5).map((a) => (
-                      <RelatedItem key={a.id} article={a} />
+                      <RelatedItem key={a.id} article={a} locale={locale} />
                     ))}
                   </div>
                 </div>
@@ -787,11 +788,11 @@ export default function ArticlePage({
                   </h3>
                   <div className="space-y-2 mb-4">
                     {relatedArticles.slice(0, 3).map((a) => (
-                      <RelatedItem key={a.id} article={a} />
+                      <RelatedItem key={a.id} article={a} locale={locale} />
                     ))}
                   </div>
                   <Link
-                    href={`/category/${article.category}`}
+                    href={`/${locale}/category/${article.category}`}
                     className="inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
                   >
                     See all {article.category} stories

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getArticleBySlug } from '@/lib/db/articles'
+import { getArticleBySlug, getArticleById } from '@/lib/db/articles'
 
 export async function GET(
   req: NextRequest,
@@ -7,7 +7,10 @@ export async function GET(
 ) {
   const { slug } = await params
   try {
-    const article = await getArticleBySlug(slug)
+    let article = await getArticleBySlug(slug)
+    if (!article) {
+      article = await getArticleById(slug)
+    }
     if (!article) {
       return NextResponse.json({ error: 'Article not found' }, { status: 404 })
     }
