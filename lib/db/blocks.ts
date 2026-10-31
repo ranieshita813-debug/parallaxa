@@ -53,10 +53,15 @@ function mapRow(row: Record<string, unknown>): CustomBlock {
 }
 
 export async function getAllCustomBlocks(): Promise<CustomBlock[]> {
-  const rows = await sql`
-    SELECT * FROM custom_blocks ORDER BY is_builtin DESC, created_at ASC
-  `
-  return rows.map(mapRow)
+  try {
+    const rows = await sql`
+      SELECT * FROM custom_blocks ORDER BY is_builtin DESC, created_at ASC
+    `
+    return rows.map(mapRow)
+  } catch (e) {
+    console.error('getAllCustomBlocks:', e)
+    return []
+  }
 }
 
 export async function getUserCustomBlocks(): Promise<CustomBlock[]> {

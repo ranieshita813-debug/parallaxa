@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from 'next-auth';
 
-export const authConfig = {
+export const authConfig: NextAuthConfig = {
+  trustHost: true,
   pages: {
     // FIX: was '/login' which doesn't exist — correct path is '/auth/signin'
     signIn: '/auth/signin',

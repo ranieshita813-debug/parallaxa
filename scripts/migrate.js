@@ -157,6 +157,21 @@ async function migrate() {
       console.log('Alter comments table article_id type skipped or already done.');
     }
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS custom_blocks (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        label TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        icon TEXT DEFAULT '🧩',
+        params JSONB DEFAULT '[]'::jsonb,
+        html_template TEXT NOT NULL,
+        is_builtin BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     // Backfill any missing columns in home_sections
     try {
       await sql`ALTER TABLE home_sections ADD COLUMN IF NOT EXISTS category_id INTEGER;`;

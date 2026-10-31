@@ -32,6 +32,8 @@ import { createCustomBlockPlugin, blockRegistry, DBBlockConfig } from '@/lib/mdx
 import '@/lib/mdx/blocks'
 import { customBlockComponents } from '@/components/mdx/CustomBlockRenderer'
 import FramedQuote from '@/components/mdx/FramedCornersQuote'
+import { Header } from '@/components/header'
+import { Footer } from '@/components/footer'
 
 /* ────────────────────────────────────────────────────────────────────────────
    Types & constants
@@ -238,7 +240,7 @@ function CodeBlock({ code, lang }: { code: string; lang: string }) {
             navigator.clipboard.writeText(code)
             setCopied(true); setTimeout(() => setCopied(false), 1800)
           }}
-          className="flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-white"
+          className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-gray-400 transition-colors hover:text-white hover:bg-white/10"
         >
           {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
           {copied ? 'Copied' : 'Copy'}
@@ -345,7 +347,7 @@ const IconBtn = ({ icon: Icon, label, onClick, active, disabled, keepFocus, clas
   <button
     type="button" title={label} aria-label={label} aria-pressed={active} disabled={disabled} onClick={onClick}
     onMouseDown={keepFocus ? e => e.preventDefault() : undefined}
-    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3858e9] disabled:cursor-not-allowed disabled:opacity-30 ${
+    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3858e9] disabled:cursor-not-allowed disabled:opacity-30 ${
       active ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
     } ${className}`}
   >
@@ -442,8 +444,8 @@ function BlockLibrary({ items, onPick, query }: { items: LibItem[]; onPick: (i: 
               const Icon = i.icon
               return (
                 <button key={i.id} type="button" onMouseDown={e => e.preventDefault()} onClick={() => onPick(i)}
-                  className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 hover:bg-slate-100">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600"><Icon size={14} /></span>
+                  className="flex w-full items-center gap-3 rounded-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600"><Icon size={14} /></span>
                   {i.label}
                 </button>
               )
@@ -694,8 +696,8 @@ const BlockEditor = forwardRef<BlockEditorApi, {
 
             <div className={`relative -mx-3 rounded-lg px-3 py-1 transition-shadow ${active ? RING : 'hover:ring-1 hover:ring-slate-200'}`}>
               {active && (
-                <div onMouseDown={e => e.preventDefault()} className="absolute -top-10 left-0 z-20 flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white p-1 shadow-md">
-                  <span className="px-2 text-xs font-medium text-slate-500">{TYPE_LABEL[type]}</span>
+                <div onMouseDown={e => e.preventDefault()} className="absolute -top-10 left-0 z-20 flex items-center gap-0.5 rounded-full border border-slate-200 bg-white p-1 shadow-md">
+                  <span className="px-3 text-xs font-medium text-slate-500">{TYPE_LABEL[type]}</span>
                   <span className="mx-0.5 h-4 w-px bg-slate-200" />
                   <IconBtn icon={ArrowUp} label="Move up" onClick={() => move(i, -1)} disabled={i === 0} keepFocus />
                   <IconBtn icon={ArrowDown} label="Move down" onClick={() => move(i, 1)} disabled={i === blocks.length - 1} keepFocus />
@@ -740,7 +742,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
 
       <button type="button"
         onClick={() => { const last = blocks[blocks.length - 1]; isBlank(last.text) ? focusBlock(last.id) : addAt(blocks.length) }}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 py-3 text-sm text-slate-400 transition-colors hover:border-[#3858e9] hover:text-[#3858e9]">
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-slate-200 py-3 text-sm text-slate-400 transition-colors hover:border-[#3858e9] hover:text-[#3858e9]">
         <Plus size={14} /> Add block
       </button>
     </div>
@@ -1088,7 +1090,7 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
           const Icon = t.icon
           return (
             <button key={t.id} role="tab" aria-selected={activeTab === t.id} title={t.label} aria-label={t.label} onClick={() => setActiveTab(t.id)}
-              className={`flex h-9 flex-1 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3858e9] ${activeTab === t.id ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+              className={`flex h-9 flex-1 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3858e9] ${activeTab === t.id ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
               <Icon size={16} />
             </button>
           )
@@ -1109,7 +1111,7 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
               </div>
             )}
             <Field label="Image URL" value={meta.coverImage} onChange={v => setMeta('coverImage', v)} placeholder="https://…" />
-            {meta.coverImage && <button type="button" onClick={() => setMeta('coverImage', '')} className="self-start text-sm font-medium text-red-600 hover:underline">Remove cover image</button>}
+            {meta.coverImage && <button type="button" onClick={() => setMeta('coverImage', '')} className="self-start rounded-full px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50">Remove cover image</button>}
           </Panel>
           <Panel title="Summary">
             <div className="grid grid-cols-2 gap-3">
@@ -1155,15 +1157,15 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
           <Panel title="Tags">
             <div className="flex gap-2">
               <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} placeholder="Add a tag"
-                className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none placeholder:text-slate-300 focus:border-[#3858e9] focus:ring-2 focus:ring-[#3858e9]/20" />
-              <button type="button" onClick={addTag} className="rounded-lg bg-slate-900 px-3.5 text-sm font-semibold text-white hover:bg-black">Add</button>
+                className="min-w-0 flex-1 rounded-full border border-slate-200 px-3 py-2 text-sm outline-none placeholder:text-slate-300 focus:border-[#3858e9] focus:ring-2 focus:ring-[#3858e9]/20" />
+              <button type="button" onClick={addTag} className="rounded-full bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-black">Add</button>
             </div>
             {meta.tags.length ? (
               <div className="flex flex-wrap gap-2">
                 {meta.tags.map(t => (
                   <span key={t} className="flex items-center gap-1.5 rounded-full border border-slate-200 py-1 pl-3 pr-2 text-sm text-slate-700">
                     #{t}
-                    <button type="button" aria-label={`Remove tag ${t}`} onClick={() => setMeta('tags', meta.tags.filter(x => x !== t))} className="text-slate-400 hover:text-red-600"><X size={12} /></button>
+                    <button type="button" aria-label={`Remove tag ${t}`} onClick={() => setMeta('tags', meta.tags.filter(x => x !== t))} className="rounded-full p-0.5 text-slate-400 hover:text-red-600"><X size={12} /></button>
                   </span>
                 ))}
               </div>
@@ -1198,7 +1200,7 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
             <div className="flex flex-wrap gap-2">
               {[[Twitter, 'X'], [Facebook, 'Facebook'], [Instagram, 'Instagram'], [Youtube, 'YouTube'], [Github, 'GitHub']].map(([Icon, n]: any) => (
                 <button key={n} type="button" disabled title={`${n} sharing is coming soon`} aria-label={`${n} (coming soon)`}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 opacity-60"><Icon size={15} /></button>
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-400 opacity-60"><Icon size={15} /></button>
               ))}
             </div>
           </Panel>
@@ -1215,12 +1217,12 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
         <div className="group relative mb-6 aspect-video overflow-hidden rounded-xl">
           <img src={meta.coverImage} alt="" className="h-full w-full object-cover" />
           <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-            <button onClick={() => setMeta('coverImage', '')} className="rounded-lg bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white">Remove cover</button>
+            <button onClick={() => setMeta('coverImage', '')} className="rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white">Remove cover</button>
           </div>
         </div>
       ) : (
         <button type="button" onClick={() => { setActiveTab('metadata'); setSettingsOpen(true) }}
-          className="mb-4 flex items-center gap-2 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-400 transition-colors hover:border-[#3858e9] hover:text-[#3858e9]">
+          className="mb-4 flex items-center gap-2 rounded-full border border-dashed border-slate-200 px-4 py-2 text-sm text-slate-400 transition-colors hover:border-[#3858e9] hover:text-[#3858e9]">
           <ImagePlus size={15} /> Add cover image
         </button>
       )}
@@ -1242,135 +1244,139 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
   const visualDisabled = mode === 'visual' && !activeType
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-100 text-slate-900">
-      {/* Top bar */}
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 sm:px-4">
-        <IconBtn icon={ChevronLeft} label="Leave editor" onClick={exit} />
-        {mode !== 'preview' && (
-          <button type="button" aria-label="Add block" aria-expanded={libraryOpen} onClick={() => setLibraryOpen(o => !o)}
-            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-transform ${libraryOpen ? 'rotate-45 bg-slate-900 text-white' : ACCENT}`}>
-            <Plus size={18} />
-          </button>
-        )}
-        <IconBtn icon={Undo2} label="Undo" onClick={undo} disabled={!canUndo} />
-        <IconBtn icon={Redo2} label="Redo" onClick={redo} disabled={!canRedo} />
+    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900">
+      <Header />
 
-        <div className="mx-auto flex items-center rounded-lg bg-slate-100 p-0.5" role="tablist" aria-label="Editor mode">
-          {([['visual', 'Visual', PenLine], ['code', 'Code', FileCode], ['preview', 'Preview', Eye]] as const).map(([m, label, Icon]) => (
-            <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-              <Icon size={15} /><span className="hidden md:inline">{label}</span>
+      <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* Top bar */}
+        <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 sm:px-4">
+          <IconBtn icon={ChevronLeft} label="Leave editor" onClick={exit} />
+          {mode !== 'preview' && (
+            <button type="button" aria-label="Add block" aria-expanded={libraryOpen} onClick={() => setLibraryOpen(o => !o)}
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition-transform ${libraryOpen ? 'rotate-45 bg-slate-900 text-white' : ACCENT}`}>
+              <Plus size={18} />
             </button>
-          ))}
-        </div>
+          )}
+          <IconBtn icon={Undo2} label="Undo" onClick={undo} disabled={!canUndo} />
+          <IconBtn icon={Redo2} label="Redo" onClick={redo} disabled={!canRedo} />
 
-        <span className={`hidden items-center gap-2 text-sm lg:flex ${saveStatus === 'error' ? 'text-red-600' : 'text-slate-500'}`} aria-live="polite">
-          <span className={`h-2 w-2 rounded-full ${saveStatus === 'saving' ? 'animate-pulse bg-amber-400' : saveStatus === 'dirty' ? 'bg-rose-400' : saveStatus === 'error' ? 'bg-red-600' : 'bg-emerald-500'}`} />
-          {saveLabel}
-        </span>
-        <button type="button" onClick={save} disabled={saveStatus === 'saving'} className="hidden h-9 items-center rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 sm:flex">
-          {saveStatus === 'saving' ? <Loader2 size={14} className="animate-spin" /> : meta.status === 'published' ? 'Update' : 'Save draft'}
-        </button>
-        <button type="button" onClick={() => setShowPublish(true)} disabled={!title.trim() || !content.trim()}
-          className={`flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors disabled:opacity-40 ${ACCENT}`}>
-          <Send size={14} /><span className="hidden sm:inline">{meta.status === 'published' ? 'Update' : 'Publish'}</span>
-        </button>
-        <IconBtn icon={PanelRight} label="Settings" active={settingsOpen} onClick={() => setSettingsOpen(o => !o)} />
-      </header>
-
-      {/* Formatting toolbar */}
-      {mode !== 'preview' ? (
-        <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3 py-1.5" style={{ scrollbarWidth: 'none' }}>
-          <div className="relative mr-1 shrink-0">
-            <select aria-label="Block type" disabled={mode === 'visual' && !activeType}
-              value={activeType && CONVERT_OPTIONS.some(o => o.value === activeType) ? activeType : ''}
-              onChange={e => e.target.value && applyType(e.target.value as ConvertType)}
-              className="h-8 cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-7 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#3858e9]/30 disabled:opacity-40">
-              <option value="" disabled>{mode === 'visual' ? (activeType ? TYPE_LABEL[activeType] : 'Select a block') : 'Turn into…'}</option>
-              {CONVERT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <ChevronDown size={13} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-          </div>
-          <IconBtn icon={Bold} label="Bold (Ctrl+B)" keepFocus disabled={visualDisabled} onClick={() => applyFormat('**', '**', 'bold text')} />
-          <IconBtn icon={Italic} label="Italic (Ctrl+I)" keepFocus disabled={visualDisabled} onClick={() => applyFormat('*', '*', 'italic text')} />
-          <IconBtn icon={Strikethrough} label="Strikethrough" keepFocus disabled={visualDisabled} onClick={() => applyFormat('~~', '~~', 'text')} />
-          <IconBtn icon={Code} label="Inline code" keepFocus disabled={visualDisabled} onClick={() => applyFormat('`', '`', 'code')} />
-          <IconBtn icon={LinkIcon} label="Link (Ctrl+K)" keepFocus disabled={visualDisabled} onClick={() => applyFormat('[', '](https://)', 'link text')} />
-          <span className="mx-1 h-5 w-px shrink-0 bg-slate-200" />
-          <IconBtn icon={Heading2} label="Heading 2" keepFocus disabled={visualDisabled} onClick={() => applyType('h2')} />
-          <IconBtn icon={List} label="Bulleted list" keepFocus disabled={visualDisabled} onClick={() => applyType('ul')} />
-          <IconBtn icon={ListOrdered} label="Numbered list" keepFocus disabled={visualDisabled} onClick={() => applyType('ol')} />
-          <IconBtn icon={Quote} label="Quote" keepFocus disabled={visualDisabled} onClick={() => applyType('quote')} />
-          <span className="ml-auto flex shrink-0 items-center gap-3 pl-3">
-            {mode === 'code' && isDesktop && (
-              <button type="button" onClick={() => setSplitPreview(s => !s)} aria-pressed={splitPreview}
-                className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium ${splitPreview ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
-                <Columns2 size={15} /> Live preview
+          <div className="mx-auto flex items-center rounded-full bg-slate-100 p-0.5" role="tablist" aria-label="Editor mode">
+            {([['visual', 'Visual', PenLine], ['code', 'Code', FileCode], ['preview', 'Preview', Eye]] as const).map(([m, label, Icon]) => (
+              <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${mode === m ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                <Icon size={15} /><span className="hidden md:inline">{label}</span>
               </button>
-            )}
-            <span className="hidden text-sm tabular-nums text-slate-400 sm:inline">{countWords(content).toLocaleString()} words</span>
+            ))}
+          </div>
+
+          <span className={`hidden items-center gap-2 text-sm lg:flex ${saveStatus === 'error' ? 'text-red-600' : 'text-slate-500'}`} aria-live="polite">
+            <span className={`h-2 w-2 rounded-full ${saveStatus === 'saving' ? 'animate-pulse bg-amber-400' : saveStatus === 'dirty' ? 'bg-rose-400' : saveStatus === 'error' ? 'bg-red-600' : 'bg-emerald-500'}`} />
+            {saveLabel}
           </span>
-        </div>
-      ) : (
-        <div className="flex shrink-0 items-center justify-center gap-1 border-b border-slate-200 bg-white py-1.5">
-          {([['desktop', Monitor], ['tablet', Tablet], ['mobile', Smartphone]] as const).map(([d, Icon]) => (
-            <IconBtn key={d} icon={Icon} label={`${d[0].toUpperCase()}${d.slice(1)} preview`} active={device === d} onClick={() => setDevice(d)} />
-          ))}
-        </div>
-      )}
+          <button type="button" onClick={save} disabled={saveStatus === 'saving'} className="hidden h-9 items-center rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 sm:flex">
+            {saveStatus === 'saving' ? <Loader2 size={14} className="animate-spin" /> : meta.status === 'published' ? 'Update' : 'Save draft'}
+          </button>
+          <button type="button" onClick={() => setShowPublish(true)} disabled={!title.trim() || !content.trim()}
+            className={`flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors disabled:opacity-40 ${ACCENT}`}>
+            <Send size={14} /><span className="hidden sm:inline">{meta.status === 'published' ? 'Update' : 'Publish'}</span>
+          </button>
+          <IconBtn icon={PanelRight} label="Settings" active={settingsOpen} onClick={() => setSettingsOpen(o => !o)} />
+        </header>
 
-      {/* Workspace */}
-      <div className="relative flex min-h-0 flex-1">
-        <AnimatePresence>
-          {libraryOpen && mode !== 'preview' && (
-            <motion.aside initial={{ x: -16, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -16, opacity: 0 }} transition={{ duration: 0.15 }}
-              className="absolute left-3 top-3 z-30 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-              <BlockLibrary items={library} onPick={pickLibrary} />
-            </motion.aside>
-          )}
-        </AnimatePresence>
-
-        <main className="flex min-w-0 flex-1">
-          {mode === 'visual' && (
-            <div className="min-w-0 flex-1 overflow-y-auto" onMouseDown={e => { if (e.target === e.currentTarget) setLibraryOpen(false) }}>
-              <div className={`${paper} ${slabo.className} ${meta.cssClass}`}>
-                {titleBlock}
-                <BlockEditor ref={blockApi} value={content} onChange={updateContent} library={library} dbBlocks={dbBlocks} onActiveType={setActiveType} />
-              </div>
+        {/* Formatting toolbar */}
+        {mode !== 'preview' ? (
+          <div className="sticky top-14 z-30 flex shrink-0 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3 py-1.5" style={{ scrollbarWidth: 'none' }}>
+            <div className="relative mr-1 shrink-0">
+              <select aria-label="Block type" disabled={mode === 'visual' && !activeType}
+                value={activeType && CONVERT_OPTIONS.some(o => o.value === activeType) ? activeType : ''}
+                onChange={e => e.target.value && applyType(e.target.value as ConvertType)}
+                className="h-8 cursor-pointer appearance-none rounded-full border border-slate-200 bg-white pl-3 pr-7 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#3858e9]/30 disabled:opacity-40">
+                <option value="" disabled>{mode === 'visual' ? (activeType ? TYPE_LABEL[activeType] : 'Select a block') : 'Turn into…'}</option>
+                {CONVERT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             </div>
-          )}
-
-          {mode === 'code' && (
-            <>
-              <div className={`${splitPreview && isDesktop ? 'w-1/2 border-r border-slate-200' : 'flex-1'} min-w-0 overflow-y-auto`}>
-                <div className={`${paper} ${slabo.className}`}>
-                  {titleBlock}
-                  <CodeMirror
-                    ref={editorRef} value={content} onChange={updateContent} extensions={cmExtensions}
-                    basicSetup={{ lineNumbers: false, foldGutter: false, dropCursor: false, allowMultipleSelections: false, indentOnInput: false, highlightActiveLine: true, highlightSelectionMatches: false }}
-                    className="min-h-[400px] w-full outline-none"
-                    placeholder={'Start writing. Markdown is supported.\n\n# Headings\n**Bold**, *italic*, `code`\n- Lists\n> Quotes'}
-                  />
-                </div>
-              </div>
-              {splitPreview && isDesktop && (
-                <div className="w-1/2 min-w-0 overflow-y-auto bg-white">
-                  <div className="mx-auto w-full max-w-2xl px-8 py-10"><ArticleView title={title} content={content} meta={meta} dbBlocks={dbBlocks} /></div>
-                </div>
+            <IconBtn icon={Bold} label="Bold (Ctrl+B)" keepFocus disabled={visualDisabled} onClick={() => applyFormat('**', '**', 'bold text')} />
+            <IconBtn icon={Italic} label="Italic (Ctrl+I)" keepFocus disabled={visualDisabled} onClick={() => applyFormat('*', '*', 'italic text')} />
+            <IconBtn icon={Strikethrough} label="Strikethrough" keepFocus disabled={visualDisabled} onClick={() => applyFormat('~~', '~~', 'text')} />
+            <IconBtn icon={Code} label="Inline code" keepFocus disabled={visualDisabled} onClick={() => applyFormat('`', '`', 'code')} />
+            <IconBtn icon={LinkIcon} label="Link (Ctrl+K)" keepFocus disabled={visualDisabled} onClick={() => applyFormat('[', '](https://)', 'link text')} />
+            <span className="mx-1 h-5 w-px shrink-0 bg-slate-200" />
+            <IconBtn icon={Heading2} label="Heading 2" keepFocus disabled={visualDisabled} onClick={() => applyType('h2')} />
+            <IconBtn icon={List} label="Bulleted list" keepFocus disabled={visualDisabled} onClick={() => applyType('ul')} />
+            <IconBtn icon={ListOrdered} label="Numbered list" keepFocus disabled={visualDisabled} onClick={() => applyType('ol')} />
+            <IconBtn icon={Quote} label="Quote" keepFocus disabled={visualDisabled} onClick={() => applyType('quote')} />
+            <span className="ml-auto flex shrink-0 items-center gap-3 pl-3">
+              {mode === 'code' && isDesktop && (
+                <button type="button" onClick={() => setSplitPreview(s => !s)} aria-pressed={splitPreview}
+                  className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-medium ${splitPreview ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                  <Columns2 size={15} /> Live preview
+                </button>
               )}
-            </>
-          )}
+              <span className="hidden text-sm tabular-nums text-slate-400 sm:inline">{countWords(content).toLocaleString()} words</span>
+            </span>
+          </div>
+        ) : (
+          <div className="sticky top-14 z-30 flex shrink-0 items-center justify-center gap-1 border-b border-slate-200 bg-white py-1.5">
+            {([['desktop', Monitor], ['tablet', Tablet], ['mobile', Smartphone]] as const).map(([d, Icon]) => (
+              <IconBtn key={d} icon={Icon} label={`${d[0].toUpperCase()}${d.slice(1)} preview`} active={device === d} onClick={() => setDevice(d)} />
+            ))}
+          </div>
+        )}
 
-          {mode === 'preview' && (
-            <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-8">
-              <div className="mx-auto overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-[max-width] duration-300" style={{ maxWidth: DEVICE_WIDTH[device] }}>
-                <div className="px-6 py-10 sm:px-10"><ArticleView title={title} content={content} meta={meta} dbBlocks={dbBlocks} /></div>
+        {/* Workspace */}
+        <div className="relative flex flex-1 min-h-[calc(100vh-14rem)]">
+          <AnimatePresence>
+            {libraryOpen && mode !== 'preview' && (
+              <motion.aside initial={{ x: -16, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -16, opacity: 0 }} transition={{ duration: 0.15 }}
+                className="absolute left-3 top-3 z-30 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                <BlockLibrary items={library} onPick={pickLibrary} />
+              </motion.aside>
+            )}
+          </AnimatePresence>
+
+          <main className="flex min-w-0 flex-1">
+            {mode === 'visual' && (
+              <div className="min-w-0 flex-1 overflow-y-auto" onMouseDown={e => { if (e.target === e.currentTarget) setLibraryOpen(false) }}>
+                <div className={`${paper} ${slabo.className} ${meta.cssClass}`}>
+                  {titleBlock}
+                  <BlockEditor ref={blockApi} value={content} onChange={updateContent} library={library} dbBlocks={dbBlocks} onActiveType={setActiveType} />
+                </div>
               </div>
-            </div>
-          )}
-        </main>
+            )}
 
-        {settingsOpen && isDesktop && <aside className="w-[340px] shrink-0 border-l border-slate-200 bg-white">{renderSettings()}</aside>}
+            {mode === 'code' && (
+              <>
+                <div className={`${splitPreview && isDesktop ? 'w-1/2 border-r border-slate-200' : 'flex-1'} min-w-0 overflow-y-auto`}>
+                  <div className={`${paper} ${slabo.className}`}>
+                    {titleBlock}
+                    <CodeMirror
+                      ref={editorRef} value={content} onChange={updateContent} extensions={cmExtensions}
+                      basicSetup={{ lineNumbers: false, foldGutter: false, dropCursor: false, allowMultipleSelections: false, indentOnInput: false, highlightActiveLine: true, highlightSelectionMatches: false }}
+                      className="min-h-[400px] w-full outline-none"
+                      placeholder={'Start writing. Markdown is supported.\n\n# Headings\n**Bold**, *italic*, `code`\n- Lists\n> Quotes'}
+                    />
+                  </div>
+                </div>
+                {splitPreview && isDesktop && (
+                  <div className="w-1/2 min-w-0 overflow-y-auto bg-white">
+                    <div className="mx-auto w-full max-w-2xl px-8 py-10"><ArticleView title={title} content={content} meta={meta} dbBlocks={dbBlocks} /></div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {mode === 'preview' && (
+              <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-8">
+                <div className="mx-auto overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-[max-width] duration-300" style={{ maxWidth: DEVICE_WIDTH[device] }}>
+                  <div className="px-6 py-10 sm:px-10"><ArticleView title={title} content={content} meta={meta} dbBlocks={dbBlocks} /></div>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {settingsOpen && isDesktop && <aside className="w-[340px] shrink-0 border-l border-slate-200 bg-white">{renderSettings()}</aside>}
+        </div>
       </div>
 
       {/* Settings sheet (mobile / tablet) */}
@@ -1415,8 +1421,8 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
                   <CheckItem ok={!!meta.coverImage} text={meta.coverImage ? 'Cover image set' : 'No cover image'} />
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={() => setShowPublish(false)} className="h-11 flex-1 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Back</button>
-                  <button onClick={publish} disabled={publishing} className={`flex h-11 flex-[2] items-center justify-center gap-2 rounded-lg text-sm font-semibold disabled:opacity-60 ${ACCENT}`}>
+                  <button onClick={() => setShowPublish(false)} className="h-11 flex-1 rounded-full border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Back</button>
+                  <button onClick={publish} disabled={publishing} className={`flex h-11 flex-[2] items-center justify-center gap-2 rounded-full text-sm font-semibold disabled:opacity-60 ${ACCENT}`}>
                     {publishing ? <><Loader2 size={16} className="animate-spin" /> Publishing…</> : <><Send size={15} /> Confirm and publish</>}
                   </button>
                 </div>
@@ -1429,11 +1435,13 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
       {/* Toast */}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-5 z-[110] flex justify-center px-4">
         {toast && (
-          <div className={`pointer-events-auto flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-lg ${toast.kind === 'error' ? 'bg-red-600' : 'bg-slate-900'}`}>
+          <div className={`pointer-events-auto flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-lg ${toast.kind === 'error' ? 'bg-red-600' : 'bg-slate-900'}`}>
             {toast.kind === 'error' ? <AlertCircle size={15} /> : <Check size={15} />}{toast.text}
           </div>
         )}
       </div>
+
+      <Footer />
     </div>
   )
 }
