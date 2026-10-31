@@ -197,7 +197,7 @@ export const customBlockComponents = {
     )
   },
   reference: (props: any) => {
-    const title = props.text || props.title || 'রেফারেন্স / Reference'
+    const title = props.text || props.title || 'তথ্যসূত্র / Source'
     const author = props.author || ''
     const year = props.year || ''
     const site = props.site || props.siteName || ''

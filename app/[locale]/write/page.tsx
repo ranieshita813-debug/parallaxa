@@ -862,10 +862,10 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                       openSentenceRefModal(b.id, found.sentence, found.end)
                     }}
                     className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-neutral-800 transition-colors hover:bg-neutral-100"
-                    title="রেফারেন্স যুক্ত করুন / Add reference to sentence"
+                    title="তথ্যসূত্র যুক্ত করুন / Add reference to sentence"
                   >
                     <BookmarkPlus size={13} className="text-neutral-700" />
-                    <span>রেফারেন্স</span>
+                    <span>তথ্যসূত্র</span>
                   </button>
                 </div>
               )}
@@ -925,7 +925,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
             className="flex items-center gap-1.5 rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
           >
             <BookmarkPlus size={13} />
-            রেফারেন্স যোগ করুন
+            তথ্যসূত্র যোগ করুন
           </button>
           <button
             type="button"
@@ -962,7 +962,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                     <BookOpen size={16} />
                   </span>
                   <div>
-                    <h3 className="text-base font-semibold text-neutral-900">সেন্টেন্সে রেফারেন্স যোগ করুন</h3>
+                    <h3 className="text-base font-semibold text-neutral-900">সেন্টেন্সে তথ্যসূত্র যোগ করুন</h3>
                     <p className="text-xs text-neutral-500">ইউআরএল দিলে স্বয়ংক্রিয়ভাবে টাইটেল ও তথ্য ফেচ হবে</p>
                   </div>
                 </div>
@@ -988,7 +988,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                 )}
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-neutral-700">রেফারেন্স ইউআরএল (URL)</label>
+                  <label className="text-xs font-semibold text-neutral-700">তথ্যসূত্র ইউআরএল (URL)</label>
                   <div className="flex gap-2">
                     <input
                       type="url"
@@ -1080,7 +1080,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                     className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-40"
                   >
                     <Check size={14} />
-                    রেফারেন্স যোগ করুন
+                    তথ্যসূত্র যোগ করুন
                   </button>
                 </div>
               </div>
@@ -1705,10 +1705,10 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
               disabled={visualDisabled}
               onClick={() => blockApi.current?.openReferenceDialog()}
               className="flex h-8 items-center gap-1.5 rounded-full border border-neutral-200 px-3 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-30"
-              title="Add Reference (সেন্টেন্সে রেফারেন্স যুক্ত করুন)"
+              title="তথ্যসূত্র যুক্ত করুন / Add reference to sentence"
             >
               <BookmarkPlus size={14} />
-              <span>রেফারেন্স</span>
+              <span>তথ্যসূত্র</span>
             </button>
             <span className="ml-auto flex shrink-0 items-center gap-3 pl-3">
               {mode === 'code' && isDesktop && (
