@@ -24,6 +24,98 @@ function extractMeta(html: string, property: string, name?: string): string | nu
   return null
 }
 
+interface ExtractedMetadata {
+  title: string
+  siteName: string
+  author: string
+  year: string
+  description: string
+}
+
+function parseJsonLd(html: string): Partial<ExtractedMetadata> {
+  const result: Partial<ExtractedMetadata> = {}
+  const scriptRegex = /<script\b[^>]*\btype=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+
+  let match: RegExpExecArray | null
+  const candidates: any[] = []
+
+  while ((match = scriptRegex.exec(html)) !== null) {
+    const rawContent = match[1]?.trim()
+    if (!rawContent) continue
+    try {
+      const parsed = JSON.parse(rawContent)
+      if (Array.isArray(parsed)) {
+        candidates.push(...parsed)
+      } else if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed['@graph'])) {
+          candidates.push(...parsed['@graph'])
+        } else {
+          candidates.push(parsed)
+        }
+      }
+    } catch {
+      // ignore malformed JSON-LD scripts
+    }
+  }
+
+  for (const item of candidates) {
+    if (!item || typeof item !== 'object') continue
+
+    // Title / Headline
+    if (!result.title) {
+      if (typeof item.name === 'string' && item.name.trim() && item['@type'] !== 'Organization') {
+        result.title = decodeHtmlEntities(item.name.trim())
+      } else if (typeof item.headline === 'string' && item.headline.trim()) {
+        result.title = decodeHtmlEntities(item.headline.trim())
+      }
+    }
+
+    // Site Name / Publisher
+    if (!result.siteName) {
+      const pub = item.publisher || (item['@type'] === 'Organization' || item['@type'] === 'NewsMediaOrganization' ? item : null)
+      if (typeof pub === 'string') {
+        result.siteName = decodeHtmlEntities(pub.trim())
+      } else if (pub && typeof pub.name === 'string') {
+        result.siteName = decodeHtmlEntities(pub.name.trim())
+      } else if (item.isPartOf && typeof item.isPartOf.name === 'string') {
+        result.siteName = decodeHtmlEntities(item.isPartOf.name.trim())
+      }
+    }
+
+    // Author
+    if (!result.author) {
+      const auth = item.author || item.creator
+      if (typeof auth === 'string') {
+        result.author = decodeHtmlEntities(auth.trim())
+      } else if (Array.isArray(auth) && auth.length > 0) {
+        const first = auth[0]
+        if (typeof first === 'string') result.author = decodeHtmlEntities(first.trim())
+        else if (first && typeof first.name === 'string') result.author = decodeHtmlEntities(first.name.trim())
+      } else if (auth && typeof auth.name === 'string') {
+        result.author = decodeHtmlEntities(auth.name.trim())
+      }
+    }
+
+    // Description
+    if (!result.description && typeof item.description === 'string' && item.description.trim()) {
+      result.description = decodeHtmlEntities(item.description.trim())
+    }
+
+    // Published Date / Year
+    if (!result.year) {
+      const dateVal = item.datePublished || item.dateCreated || item.dateModified
+      if (typeof dateVal === 'string') {
+        const parsedYear = new Date(dateVal).getFullYear()
+        if (!isNaN(parsedYear) && parsedYear > 1970 && parsedYear <= new Date().getFullYear() + 1) {
+          result.year = parsedYear.toString()
+        }
+      }
+    }
+  }
+
+  return result
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
@@ -42,133 +134,94 @@ export async function POST(req: NextRequest) {
     const targetUrl = urlObj.toString()
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000)
+    const timeoutId = setTimeout(() => controller.abort(), 9000)
 
     let html = ''
     try {
       const res = await fetch(targetUrl, {
         signal: controller.signal,
+        redirect: 'follow',
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9,bn;q=0.8',
         },
       })
       clearTimeout(timeoutId)
 
-      if (!res.ok) {
-        return NextResponse.json({
-          url: targetUrl,
-          title: urlObj.hostname.replace(/^www\./, ''),
-          siteName: urlObj.hostname.replace(/^www\./, ''),
-          author: '',
-          year: new Date().getFullYear().toString(),
-          description: '',
-        })
+      if (res.ok) {
+        html = await res.text()
       }
-
-      html = await res.text()
     } catch {
       clearTimeout(timeoutId)
-      // If fetch fails (CORS, network error, blocked), return fallback with host info
-      return NextResponse.json({
-        url: targetUrl,
-        title: urlObj.hostname.replace(/^www\./, ''),
-        siteName: urlObj.hostname.replace(/^www\./, ''),
-        author: '',
-        year: new Date().getFullYear().toString(),
-        description: '',
-      })
     }
+
+    // Extract from structured JSON-LD first
+    const jsonLdData = html ? parseJsonLd(html) : {}
 
     // 1. Title
     let title =
+      jsonLdData.title ||
       extractMeta(html, 'og:title', 'twitter:title') ||
       extractMeta(html, 'title') ||
       ''
 
-    if (!title) {
+    if (!title && html) {
       const titleTagMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
       if (titleTagMatch && titleTagMatch[1]) {
         title = decodeHtmlEntities(titleTagMatch[1].trim())
       }
     }
 
-    // If still no title, fallback to host
     if (!title) {
       title = urlObj.hostname.replace(/^www\./, '')
     }
 
     // 2. Site Name
     let siteName =
+      jsonLdData.siteName ||
       extractMeta(html, 'og:site_name', 'application-name') ||
       urlObj.hostname.replace(/^www\./, '')
 
-    // Clean title if it contains siteName e.g. "Article Title - BBC News"
-    if (siteName && title.includes(` - ${siteName}`)) {
-      // keep it readable
-    }
-
     // 3. Author
     let author =
+      jsonLdData.author ||
       extractMeta(html, 'author', 'article:author') ||
       extractMeta(html, 'twitter:creator') ||
       extractMeta(html, 'og:article:author') ||
+      siteName ||
       ''
 
-    if (!author) {
-      // Try schema.org json-ld author
-      const jsonLdMatch = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)
-      if (jsonLdMatch) {
-        for (const scriptTag of jsonLdMatch) {
-          const content = scriptTag.replace(/<script[^>]*>|<\/script>/gi, '').trim()
-          try {
-            const data = JSON.parse(content)
-            const item = Array.isArray(data) ? data[0] : data
-            if (item) {
-              const authObj = item.author || item.creator
-              if (typeof authObj === 'string') author = authObj
-              else if (Array.isArray(authObj) && authObj[0]?.name) author = authObj[0].name
-              else if (authObj?.name) author = authObj.name
-            }
-          } catch {
-            // ignore JSON parse errors in script tags
-          }
-          if (author) break
+    // 4. Date / Year
+    let year = jsonLdData.year || ''
+    if (!year && html) {
+      const dateStr =
+        extractMeta(html, 'article:published_time', 'datePublished') ||
+        extractMeta(html, 'og:published_time') ||
+        extractMeta(html, 'date', 'pubdate')
+
+      if (dateStr) {
+        const parsedYear = new Date(dateStr).getFullYear()
+        if (!isNaN(parsedYear) && parsedYear > 1970 && parsedYear <= new Date().getFullYear() + 1) {
+          year = parsedYear.toString()
         }
       }
     }
 
-    if (!author) {
-      author = siteName
-    }
-
-    // 4. Date / Year
-    let year = ''
-    const dateStr =
-      extractMeta(html, 'article:published_time', 'datePublished') ||
-      extractMeta(html, 'og:published_time') ||
-      extractMeta(html, 'date', 'pubdate')
-
-    if (dateStr) {
-      const parsedYear = new Date(dateStr).getFullYear()
-      if (!isNaN(parsedYear) && parsedYear > 1970 && parsedYear <= new Date().getFullYear() + 1) {
-        year = parsedYear.toString()
-      }
-    }
-
-    if (!year) {
-      // Try copyright or current year
+    if (!year && html) {
       const copyrightMatch = html.match(/(?:©|&copy;|Copyright)\s*(?:20\d\d[-–])?(20\d\d)/i)
       if (copyrightMatch && copyrightMatch[1]) {
         year = copyrightMatch[1]
       } else {
         year = new Date().getFullYear().toString()
       }
+    } else if (!year) {
+      year = new Date().getFullYear().toString()
     }
 
     // 5. Description
     const description =
+      jsonLdData.description ||
       extractMeta(html, 'og:description', 'twitter:description') ||
       extractMeta(html, 'description') ||
       ''
