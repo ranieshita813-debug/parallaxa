@@ -32,8 +32,7 @@ import { createCustomBlockPlugin, blockRegistry, DBBlockConfig } from '@/lib/mdx
 import '@/lib/mdx/blocks'
 import { customBlockComponents } from '@/components/mdx/CustomBlockRenderer'
 import FramedQuote from '@/components/mdx/FramedCornersQuote'
-import { ReferencesSection } from '@/components/ReferencesSection'
-import { processArticleReferences } from '@/lib/references'
+import { normalizeLegacyReferences, getNextFootnoteIndex } from '@/lib/references'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 
@@ -300,19 +299,49 @@ const mdComponents: Components = {
   hr: () => <hr className="my-8 border-slate-200" />,
   strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>,
   em: ({ children }) => <em className="italic text-slate-600">{children}</em>,
-  a: ({ href, title, children }) => {
-    const isRef = href?.startsWith('#ref-')
-    if (isRef) {
+  sup: ({ children }) => <sup className="mx-0.5 inline-block text-[0.8em] font-semibold">{children}</sup>,
+  section: ({ node, ...props }) => {
+    if ((props as any)['data-footnotes']) {
       return (
-        <sup className="mx-0.5 inline-block text-[0.8em] font-bold">
-          <a
-            href={href}
-            title={title}
-            className="text-blue-600 underline decoration-blue-300 underline-offset-2 transition-colors hover:text-blue-800"
-          >
-            [{children}]
-          </a>
-        </sup>
+        <details id="article-references" className="my-8 rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 transition-all">
+          <summary className="cursor-pointer font-bold text-neutral-900 select-none flex items-center gap-2">
+            <span>তথ্যসূত্র (ফুটনোট)</span>
+          </summary>
+          <div className="mt-3 border-t border-neutral-200/80 pt-3 text-sm text-slate-700 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1.5">
+            {props.children}
+          </div>
+        </details>
+      )
+    }
+    return <section {...props} />
+  },
+  a: ({ href, title, children, ...props }) => {
+    const isFootnoteRef = (props as any)['data-footnote-ref']
+    const isBackref = (props as any)['data-footnote-backref']
+    if (isFootnoteRef) {
+      const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
+      const formatted = String(children).replace(/\d/g, d => bnDigits[parseInt(d)])
+      return (
+        <a
+          href={href}
+          title={title}
+          className="text-blue-600 underline decoration-blue-300 underline-offset-2 transition-colors hover:text-blue-800 font-bold"
+          {...props}
+        >
+          [{formatted}]
+        </a>
+      )
+    }
+    if (isBackref) {
+      return (
+        <a
+          href={href}
+          aria-label={title || 'Back to reference'}
+          className="ml-1 inline-block text-blue-600 hover:text-blue-800 text-xs font-sans"
+          {...props}
+        >
+          ↩
+        </a>
       )
     }
     const isHash = href?.startsWith('#')
@@ -323,6 +352,7 @@ const mdComponents: Components = {
         target={isHash ? undefined : '_blank'}
         rel={isHash ? undefined : 'noopener noreferrer'}
         className="text-[#3858e9] underline decoration-[#3858e9]/30 underline-offset-2 transition-colors hover:decoration-[#3858e9]"
+        {...props}
       >
         {children}
       </a>
@@ -353,8 +383,8 @@ function Badges({ meta }: { meta: Meta }) {
 }
 
 function ArticleView({ title, content, meta, dbBlocks }: { title: string; content: string; meta: Meta; dbBlocks: DBBlockConfig[] }) {
-  const { content: processedContent, references } = useMemo(
-    () => processArticleReferences(content),
+  const processedContent = useMemo(
+    () => normalizeLegacyReferences(content),
     [content]
   )
 
@@ -369,12 +399,7 @@ function ArticleView({ title, content, meta, dbBlocks }: { title: string; conten
         <span className="flex items-center gap-1"><Clock size={12} />{estimateReadTime(content)} min read</span>
       </div>
       {content.trim() ? (
-        <>
-          <MarkdownView content={processedContent} dbBlocks={dbBlocks} />
-          {references.length > 0 && (
-            <ReferencesSection references={references} locale="bn" />
-          )}
-        </>
+        <MarkdownView content={processedContent} dbBlocks={dbBlocks} />
       ) : (
         <p className="py-16 text-center italic text-slate-300">Nothing to preview yet.</p>
       )}
@@ -635,9 +660,10 @@ const BlockEditor = forwardRef<BlockEditorApi, {
     } else addAt(activeIndex >= 0 ? activeIndex + 1 : blocks.length, text, caret)
   }
 
-  /* Sentence reference state */
+  /* Footnote reference state */
   const [refModalOpen, setRefModalOpen] = useState(false)
   const [refTarget, setRefTarget] = useState<{ blockId: string; sentenceText: string; insertIndex: number } | null>(null)
+  const [refNoteText, setRefNoteText] = useState('')
   const [refUrlInput, setRefUrlInput] = useState('')
   const [refLoading, setRefLoading] = useState(false)
   const [refMeta, setRefMeta] = useState<{ title: string; author: string; year: string; siteName: string; description: string; url: string }>({
@@ -669,7 +695,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
     const found = findSentenceAt(b.text, pos)
     if (found && found.sentence.length > 2) {
       const bcr = el.getBoundingClientRect()
-      // Show floating sentence reference button
+      // Show floating sentence footnote button
       setSentencePopup({
         blockId: b.id,
         sentenceText: found.sentence,
@@ -687,6 +713,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
   const openSentenceRefModal = (blockId: string, sentenceText: string, insertIndex: number) => {
     setSentencePopup(null)
     setRefTarget({ blockId, sentenceText, insertIndex })
+    setRefNoteText('')
     setRefUrlInput('')
     setRefMeta({ title: '', author: '', year: new Date().getFullYear().toString(), siteName: '', description: '', url: '' })
     setRefError('')
@@ -696,8 +723,11 @@ const BlockEditor = forwardRef<BlockEditorApi, {
   const openGeneralRefModal = () => {
     const curBlock = blocks[activeIndex] || blocks[0]
     const text = curBlock ? curBlock.text : ''
+    const el = curBlock ? taRefs.current[curBlock.id] : null
+    const pos = el ? el.selectionStart : text.length
     setSentencePopup(null)
-    setRefTarget({ blockId: curBlock ? curBlock.id : '', sentenceText: text.slice(0, 60), insertIndex: text.length })
+    setRefTarget({ blockId: curBlock ? curBlock.id : '', sentenceText: text.slice(0, 60), insertIndex: pos })
+    setRefNoteText('')
     setRefUrlInput('')
     setRefMeta({ title: '', author: '', year: new Date().getFullYear().toString(), siteName: '', description: '', url: '' })
     setRefError('')
@@ -724,8 +754,11 @@ const BlockEditor = forwardRef<BlockEditorApi, {
         description: data.description || '',
         url: data.url || urlToFetch.trim(),
       })
+      if (data.title && !refNoteText) {
+        setRefNoteText(data.title)
+      }
     } catch (err: any) {
-      setRefError('তথ্য ফেচ করা যায়নি, আপনি নিজে তথ্য পূরণ করতে পারেন।')
+      setRefError('তথ্য ফেচ করা যায়নি, আপনি নিজে তথ্য লিখে দিতে পারেন।')
     } finally {
       setRefLoading(false)
     }
@@ -743,37 +776,54 @@ const BlockEditor = forwardRef<BlockEditorApi, {
     const blockIndex = blocks.findIndex(b => b.id === refTarget.blockId)
     if (blockIndex < 0) return
 
-    const titleStr = (refMeta.title || refUrlInput || 'Reference').replace(/"/g, "'")
-    const authorStr = (refMeta.author || '').replace(/"/g, "'")
-    const yearStr = (refMeta.year || '').replace(/"/g, "'")
-    const siteStr = (refMeta.siteName || '').replace(/"/g, "'")
-    const urlStr = refMeta.url || refUrlInput.trim()
+    const fullDoc = serialize(blocks)
+    const nextIndex = getNextFootnoteIndex(fullDoc)
+    const footnoteRef = `[^${nextIndex}]`
 
-    let blockParam = `[!reference(text="${titleStr}" url="${urlStr}"`
-    if (authorStr) blockParam += ` author="${authorStr}"`
-    if (yearStr) blockParam += ` year="${yearStr}"`
-    if (siteStr) blockParam += ` site="${siteStr}"`
-    blockParam += ')]'
+    // Build the footnote definition text
+    let defContent = ''
+    if (refUrlInput.trim()) {
+      const linkTitle = refMeta.title || refNoteText || refUrlInput.trim()
+      defContent = `[${linkTitle}](${refUrlInput.trim()})`
+      const extraParts: string[] = []
+      if (refMeta.author) extraParts.push(refMeta.author)
+      if (refMeta.year) extraParts.push(`(${refMeta.year})`)
+      if (refMeta.siteName) extraParts.push(refMeta.siteName)
+      if (extraParts.length > 0) {
+        defContent += ` - ${extraParts.join(', ')}`
+      }
+    } else {
+      defContent = refNoteText.trim() || 'তথ্যসূত্র'
+    }
+    const footnoteDef = `[^${nextIndex}]: ${defContent}`
 
     const targetBlock = blocks[blockIndex]
-    // If user selected a specific sentence inside the block, insert the reference right after that sentence
-    if (refTarget.insertIndex !== undefined && refTarget.insertIndex >= 0 && refTarget.insertIndex <= targetBlock.text.length) {
-      const idx = refTarget.insertIndex
-      const newText = targetBlock.text.slice(0, idx) + ' ' + blockParam + targetBlock.text.slice(idx)
-      updateText(targetBlock.id, newText)
-      setRefModalOpen(false)
-      focusBlock(targetBlock.id, idx + blockParam.length + 1)
-      return
+    const pos = (refTarget.insertIndex !== undefined && refTarget.insertIndex >= 0 && refTarget.insertIndex <= targetBlock.text.length)
+      ? refTarget.insertIndex
+      : targetBlock.text.length
+
+    // Insert [^n] right at pos
+    const newText = targetBlock.text.slice(0, pos) + footnoteRef + targetBlock.text.slice(pos)
+
+    // Add or append the footnote definition
+    // Find if the last block is a footnote definition block or append a new block
+    const updatedBlocks = blocks.map((b, idx) => idx === blockIndex ? { ...b, text: newText } : b)
+    const lastBlock = updatedBlocks[updatedBlocks.length - 1]
+
+    if (lastBlock && /^\s*\[\^\d+\]:/.test(lastBlock.text)) {
+      // Append to the existing footnote definitions block
+      updatedBlocks[updatedBlocks.length - 1] = {
+        ...lastBlock,
+        text: `${lastBlock.text.trimEnd()}\n${footnoteDef}`,
+      }
+    } else {
+      // Add as a new block at the end
+      updatedBlocks.push(mk(footnoteDef))
     }
 
-    const nextNb = mk(blockParam)
-    commit([
-      ...blocks.slice(0, blockIndex + 1),
-      nextNb,
-      ...blocks.slice(blockIndex + 1),
-    ])
+    commit(updatedBlocks)
     setRefModalOpen(false)
-    focusBlock(nextNb.id)
+    focusBlock(targetBlock.id, pos + footnoteRef.length)
   }
 
   useImperativeHandle(ref, () => ({
@@ -904,14 +954,14 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                     onClick={() => {
                       const el = taRefs.current[b.id]
                       const pos = el ? el.selectionStart : b.text.length
-                      const found = findSentenceAt(b.text, pos) || { sentence: b.text.slice(0, 50), end: b.text.length }
+                      const found = findSentenceAt(b.text, pos) || { sentence: b.text.slice(0, 50), end: pos }
                       openSentenceRefModal(b.id, found.sentence, found.end)
                     }}
                     className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-neutral-800 transition-colors hover:bg-neutral-100"
-                    title="রেফারেন্স যুক্ত করুন / Add reference to sentence"
+                    title="ফুটনোট যুক্ত করুন / Add footnote"
                   >
                     <BookmarkPlus size={13} className="text-neutral-700" />
-                    <span>রেফারেন্স</span>
+                    <span>ফুটনোট</span>
                   </button>
                 </div>
               )}
@@ -971,7 +1021,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
             className="flex items-center gap-1.5 rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
           >
             <BookmarkPlus size={13} />
-            রেফারেন্স যোগ করুন
+            ফুটনোট যোগ করুন
           </button>
           <button
             type="button"
@@ -1008,8 +1058,8 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                     <BookOpen size={16} />
                   </span>
                   <div>
-                    <h3 className="text-base font-semibold text-neutral-900">সেন্টেন্সে রেফারেন্স যোগ করুন</h3>
-                    <p className="text-xs text-neutral-500">ইউআরএল দিলে স্বয়ংক্রিয়ভাবে টাইটেল ও তথ্য ফেচ হবে</p>
+                    <h3 className="text-base font-semibold text-neutral-900">ফুটনোট যোগ করুন</h3>
+                    <p className="text-xs text-neutral-500">স্ট্যান্ডার্ড ফুটনোট সিনট্যাক্স [^১] যোগ হবে</p>
                   </div>
                 </div>
                 <button
@@ -1025,7 +1075,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                 {refTarget?.sentenceText && (
                   <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/70 p-3">
                     <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider block mb-1">
-                      নির্বাচিত সেন্টেন্স / Selected Sentence
+                      নির্বাচিত বাক্য / Selected sentence
                     </span>
                     <p className="text-xs text-neutral-800 italic line-clamp-2">
                       &ldquo;{refTarget.sentenceText}&rdquo;
@@ -1034,12 +1084,23 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                 )}
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-neutral-700">রেফারেন্স ইউআরএল (URL)</label>
+                  <label className="text-xs font-semibold text-neutral-700">ফুটনোটের বিবরণ বা নোট</label>
+                  <textarea
+                    autoFocus
+                    rows={2}
+                    placeholder="এখানে ফুটনোটের বিবরণ লিখুন..."
+                    value={refNoteText}
+                    onChange={e => setRefNoteText(e.target.value)}
+                    className="w-full rounded-xl border border-neutral-200 bg-white p-3 text-sm text-neutral-900 outline-none transition-shadow focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 placeholder:text-neutral-400 resize-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-neutral-700">ওয়েব লিংক (ঐচ্ছিক / Optional)</label>
                   <div className="flex gap-2">
                     <input
                       type="url"
-                      autoFocus
-                      placeholder="https://example.com/article"
+                      placeholder="https://example.com/source"
                       value={refUrlInput}
                       onChange={e => handleRefUrlChange(e.target.value)}
                       onKeyDown={e => {
@@ -1063,70 +1124,22 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                   {refError && <p className="text-xs text-amber-700">{refError}</p>}
                 </div>
 
-                <div className="space-y-3 pt-1 border-t border-neutral-100">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-neutral-600">টাইটেল / Title</label>
-                    <input
-                      type="text"
-                      placeholder="নিবন্ধ বা তথ্যের শিরোনাম"
-                      value={refMeta.title}
-                      onChange={e => setRefMeta(m => ({ ...m, title: e.target.value }))}
-                      className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-neutral-600">লেখক বা সোর্স / Author</label>
-                      <input
-                        type="text"
-                        placeholder="যেমন: BBC News, Prothom Alo"
-                        value={refMeta.author}
-                        onChange={e => setRefMeta(m => ({ ...m, author: e.target.value }))}
-                        className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-neutral-600">বছর / Year</label>
-                        <input
-                          type="text"
-                          placeholder="2026"
-                          value={refMeta.year}
-                          onChange={e => setRefMeta(m => ({ ...m, year: e.target.value }))}
-                          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-semibold text-neutral-600">সাইটের নাম</label>
-                        <input
-                          type="text"
-                          placeholder="ওয়েবসাইট"
-                          value={refMeta.siteName}
-                          onChange={e => setRefMeta(m => ({ ...m, siteName: e.target.value }))}
-                          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-100">
                   <button
                     type="button"
                     onClick={() => setRefModalOpen(false)}
                     className="rounded-full border border-neutral-200 px-4 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-50"
                   >
-                    বাতিল / Cancel
+                    বাতিল
                   </button>
                   <button
                     type="button"
                     onClick={confirmInsertReference}
-                    disabled={!refUrlInput.trim() && !refMeta.title.trim()}
+                    disabled={!refNoteText.trim() && !refUrlInput.trim()}
                     className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-40"
                   >
                     <Check size={14} />
-                    রেফারেন্স যোগ করুন
+                    ফুটনোট যোগ করুন
                   </button>
                 </div>
               </div>
@@ -1749,12 +1762,19 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
             <button
               type="button"
               disabled={visualDisabled}
-              onClick={() => blockApi.current?.openReferenceDialog()}
+              onClick={() => {
+                if (mode === 'visual') {
+                  blockApi.current?.openReferenceDialog()
+                } else {
+                  const nextIdx = getNextFootnoteIndex(content)
+                  cmInsert(`[^${nextIdx}]`, `\n\n[^${nextIdx}]: `, 'নোট')
+                }
+              }}
               className="flex h-8 items-center gap-1.5 rounded-full border border-neutral-200 px-3 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-30"
-              title="Add Reference (সেন্টেন্সে রেফারেন্স যুক্ত করুন)"
+              title="Add Footnote (ফুটনোট যুক্ত করুন [^১])"
             >
               <BookmarkPlus size={14} />
-              <span>রেফারেন্স</span>
+              <span>ফুটনোট</span>
             </button>
             <span className="ml-auto flex shrink-0 items-center gap-3 pl-3">
               {mode === 'code' && isDesktop && (

@@ -196,24 +196,6 @@ export const customBlockComponents = {
       </div>
     )
   },
-  reference: (props: any) => {
-    const title = props.text || props.title || 'তথ্যসূত্র'
-    const url = props.url || ''
-    const index = props.index || 1
-    return (
-      <sup className="mx-0.5 inline-block text-[0.8em] font-semibold">
-        <a
-          href={url || `#ref-${index}`}
-          title={title}
-          target={url ? '_blank' : undefined}
-          rel={url ? 'noopener noreferrer' : undefined}
-          className="text-blue-600 hover:text-blue-800 underline decoration-blue-300 hover:underline"
-        >
-          [{index}]
-        </a>
-      </sup>
-    )
-  },
   tika: (props: any) => (
     <div className="my-4 p-4 bg-yellow-50/50 border-l-4 border-yellow-400 rounded-none flex items-start gap-3">
       <StickyNote size={16} className="text-yellow-600 mt-1 shrink-0" />

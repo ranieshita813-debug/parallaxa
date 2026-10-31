@@ -313,29 +313,6 @@ blockRegistry.register({
 })
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  REFERENCE BLOCK
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-blockRegistry.register({
-  name: 'reference',
-  label: 'Reference',
-  icon: 'book_2',
-  pattern: /\[!reference\s*\(([\s\S]*?)\)\s*\]/,
-  template: '[!reference(text="Source Title" url="https://" author="Author Name" year="2026" site="Source Name")]',
-  handler: (match) => {
-    const rawParams = match[1] || ''
-    const params = parseBlockParams(rawParams)
-    return {
-      type: 'reference',
-      hName: 'reference',
-      hProperties: {
-        className: 'custom-block reference-block',
-        ...params,
-      },
-    }
-  },
-})
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  TIKA BLOCK (Notes)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 blockRegistry.register({

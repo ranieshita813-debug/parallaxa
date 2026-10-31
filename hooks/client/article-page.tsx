@@ -22,8 +22,7 @@ import { createCustomBlockPlugin, DBBlockConfig } from '@/lib/mdx/block-registry
 import '@/lib/mdx/blocks'
 import { customBlockComponents } from '@/components/mdx/CustomBlockRenderer'
 import FramedQuote from '@/components/mdx/FramedCornersQuote'
-import { ReferencesSection } from '@/components/ReferencesSection'
-import { processArticleReferences } from '@/lib/references'
+import { normalizeLegacyReferences } from '@/lib/references'
 import {
   Check, Copy, ArrowLeft, ChevronRight, Bookmark, BookmarkCheck,
   Printer, Share2, Link as LinkIcon, Clock, Eye, X, ZoomIn,
@@ -348,19 +347,50 @@ function ArticleMarkdown({
     hr: () => <hr className="my-10 border-slate-200" />,
     strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>,
     em: ({ children }) => <em className="italic">{children}</em>,
-    a: ({ href, title, children }) => {
-      const isRef = href?.startsWith('#ref-')
-      if (isRef) {
+    sup: ({ children }) => <sup className="mx-0.5 inline-block text-[0.8em] font-semibold">{children}</sup>,
+    section: ({ node, ...props }) => {
+      if ((props as any)['data-footnotes']) {
         return (
-          <sup className="mx-0.5 inline-block text-[0.8em] font-bold">
-            <a
-              href={href}
-              title={title}
-              className="text-blue-600 underline decoration-blue-300 underline-offset-2 transition-colors hover:text-blue-800 hover:decoration-blue-700"
-            >
-              [{children}]
-            </a>
-          </sup>
+          <details id="article-references" className="my-8 rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 transition-all">
+            <summary className="cursor-pointer font-bold text-neutral-900 select-none flex items-center justify-between">
+              <span className="text-base">{locale === 'bn' ? 'তথ্যসূত্র (ফুটনোট)' : 'References & Footnotes'}</span>
+              <span className="text-xs font-normal text-slate-500">{locale === 'bn' ? 'ক্লিক করে দেখুন / লুকান' : 'Click to expand / collapse'}</span>
+            </summary>
+            <div className="mt-3 border-t border-neutral-200/80 pt-3 text-sm text-slate-700 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-2 leading-relaxed">
+              {props.children}
+            </div>
+          </details>
+        )
+      }
+      return <section {...props} />
+    },
+    a: ({ href, title, children, ...props }) => {
+      const isFootnoteRef = (props as any)['data-footnote-ref']
+      const isBackref = (props as any)['data-footnote-backref']
+      if (isFootnoteRef) {
+        const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
+        const formatted = locale === 'bn' ? String(children).replace(/\d/g, d => bnDigits[parseInt(d)]) : children
+        return (
+          <a
+            href={href}
+            title={title}
+            className="text-blue-600 underline decoration-blue-300 underline-offset-2 transition-colors hover:text-blue-800 font-bold"
+            {...props}
+          >
+            [{formatted}]
+          </a>
+        )
+      }
+      if (isBackref) {
+        return (
+          <a
+            href={href}
+            aria-label={title || 'Back to reference'}
+            className="ml-1 inline-block text-blue-600 hover:text-blue-800 text-xs font-sans"
+            {...props}
+          >
+            ↩
+          </a>
         )
       }
       const isHash = href?.startsWith('#')
@@ -371,6 +401,7 @@ function ArticleMarkdown({
           target={isHash ? undefined : '_blank'}
           rel={isHash ? undefined : 'noopener noreferrer'}
           className="font-medium text-red-700 underline decoration-red-300 underline-offset-[3px] transition-colors hover:text-red-800 hover:decoration-red-700"
+          {...props}
         >
           {children}
         </a>
@@ -866,19 +897,14 @@ export default function ArticlePage({
               {/* Body: constrained to a comfortable reading width */}
               <article ref={bodyRef} className="mx-auto max-w-[44rem] break-words pb-6 pt-2 lg:mx-0">
                 {(() => {
-                  const { content: processedContent, references } = processArticleReferences(article.content)
+                  const processedContent = normalizeLegacyReferences(article.content)
                   return (
-                    <>
-                      <ArticleMarkdown
-                        content={processedContent}
-                        dbBlocks={dbBlocks}
-                        onImageClick={(src, alt, caption) => setPreviewImage({ src, alt, caption })}
-                        onDiagramRendered={() => setDiagramsReady(true)}
-                      />
-                      {references.length > 0 && (
-                        <ReferencesSection references={references} locale={locale} />
-                      )}
-                    </>
+                    <ArticleMarkdown
+                      content={processedContent}
+                      dbBlocks={dbBlocks}
+                      onImageClick={(src, alt, caption) => setPreviewImage({ src, alt, caption })}
+                      onDiagramRendered={() => setDiagramsReady(true)}
+                    />
                   )
                 })()}
               </article>
