@@ -318,11 +318,12 @@ blockRegistry.register({
 blockRegistry.register({
   name: 'reference',
   label: 'Reference',
-  icon: 'book',
+  icon: 'book_2',
   pattern: /\[!reference\s*\(([\s\S]*?)\)\s*\]/,
-  template: '[!reference(text="Source Title" url="https://" author="Author Name" year="2024")]',
+  template: '[!reference(text="Source Title" url="https://" author="Author Name" year="2026" site="Source Name")]',
   handler: (match) => {
-    const params = parseBlockParams(match[1] || '')
+    const rawParams = match[1] || ''
+    const params = parseBlockParams(rawParams)
     return {
       type: 'reference',
       hName: 'reference',

@@ -26,7 +26,7 @@ import {
   Monitor, Tablet, Smartphone, Search, X, Check, CheckCircle2, AlertCircle, Loader2,
   Send, Settings, SearchCheck, Accessibility, Tag, Share2, Star, Zap, TrendingUp, Clock,
   ArrowUp, ArrowDown, Copy, Trash2, Sparkles, Box, Columns2, Twitter, Facebook,
-  Instagram, Youtube, Github, ImagePlus,
+  Instagram, Youtube, Github, ImagePlus, BookmarkPlus, BookOpen, ExternalLink,
 } from 'lucide-react'
 import { createCustomBlockPlugin, blockRegistry, DBBlockConfig } from '@/lib/mdx/block-registry'
 import '@/lib/mdx/blocks'
@@ -479,6 +479,7 @@ export interface BlockEditorApi {
   setType: (t: ConvertType) => void
   insertBlock: (text: string, caret?: number) => void
   focusFirst: () => void
+  openReferenceDialog: () => void
 }
 
 type Focus = { id: string; pos: number | 'start' | 'end' }
@@ -597,11 +598,144 @@ const BlockEditor = forwardRef<BlockEditorApi, {
     } else addAt(activeIndex >= 0 ? activeIndex + 1 : blocks.length, text, caret)
   }
 
+  /* Sentence reference state */
+  const [refModalOpen, setRefModalOpen] = useState(false)
+  const [refTarget, setRefTarget] = useState<{ blockId: string; sentenceText: string; insertIndex: number } | null>(null)
+  const [refUrlInput, setRefUrlInput] = useState('')
+  const [refLoading, setRefLoading] = useState(false)
+  const [refMeta, setRefMeta] = useState<{ title: string; author: string; year: string; siteName: string; description: string; url: string }>({
+    title: '', author: '', year: '', siteName: '', description: '', url: ''
+  })
+  const [refError, setRefError] = useState('')
+  const [sentencePopup, setSentencePopup] = useState<{ blockId: string; sentenceText: string; insertIndex: number; rect: { top: number; left: number } } | null>(null)
+
+  const findSentenceAt = (text: string, pos: number) => {
+    const regex = /([^.!?।\n]+[.!?।]+|[^.!?।\n]+)/g
+    let match: RegExpExecArray | null
+    while ((match = regex.exec(text)) !== null) {
+      const start = match.index
+      const end = start + match[0].length
+      if (pos >= start && pos <= end) {
+        return {
+          sentence: match[0].trim(),
+          start,
+          end,
+        }
+      }
+    }
+    return null
+  }
+
+  const handleTextareaClick = (e: React.MouseEvent<HTMLTextAreaElement>, b: Block) => {
+    const el = e.currentTarget
+    const pos = el.selectionStart
+    const found = findSentenceAt(b.text, pos)
+    if (found && found.sentence.length > 2) {
+      const bcr = el.getBoundingClientRect()
+      // Show floating sentence reference button
+      setSentencePopup({
+        blockId: b.id,
+        sentenceText: found.sentence,
+        insertIndex: found.end,
+        rect: {
+          top: bcr.top - 36,
+          left: Math.max(16, Math.min(bcr.left + 20, window.innerWidth - 220)),
+        },
+      })
+    } else {
+      setSentencePopup(null)
+    }
+  }
+
+  const openSentenceRefModal = (blockId: string, sentenceText: string, insertIndex: number) => {
+    setSentencePopup(null)
+    setRefTarget({ blockId, sentenceText, insertIndex })
+    setRefUrlInput('')
+    setRefMeta({ title: '', author: '', year: new Date().getFullYear().toString(), siteName: '', description: '', url: '' })
+    setRefError('')
+    setRefModalOpen(true)
+  }
+
+  const openGeneralRefModal = () => {
+    const curBlock = blocks[activeIndex] || blocks[0]
+    const text = curBlock ? curBlock.text : ''
+    setSentencePopup(null)
+    setRefTarget({ blockId: curBlock ? curBlock.id : '', sentenceText: text.slice(0, 60), insertIndex: text.length })
+    setRefUrlInput('')
+    setRefMeta({ title: '', author: '', year: new Date().getFullYear().toString(), siteName: '', description: '', url: '' })
+    setRefError('')
+    setRefModalOpen(true)
+  }
+
+  const fetchUrlMeta = async (urlToFetch: string) => {
+    if (!urlToFetch || !urlToFetch.trim()) return
+    setRefLoading(true)
+    setRefError('')
+    try {
+      const res = await fetch('/api/fetch-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlToFetch.trim() }),
+      })
+      if (!res.ok) throw new Error('Could not fetch URL info')
+      const data = await res.json()
+      setRefMeta({
+        title: data.title || '',
+        author: data.author || '',
+        year: data.year || new Date().getFullYear().toString(),
+        siteName: data.siteName || '',
+        description: data.description || '',
+        url: data.url || urlToFetch.trim(),
+      })
+    } catch (err: any) {
+      setRefError('তথ্য ফেচ করা যায়নি, আপনি নিজে তথ্য পূরণ করতে পারেন।')
+    } finally {
+      setRefLoading(false)
+    }
+  }
+
+  const handleRefUrlChange = (val: string) => {
+    setRefUrlInput(val)
+    if (val.startsWith('http://') || val.startsWith('https://')) {
+      fetchUrlMeta(val)
+    }
+  }
+
+  const confirmInsertReference = () => {
+    if (!refTarget) return
+    const blockIndex = blocks.findIndex(b => b.id === refTarget.blockId)
+    if (blockIndex < 0) return
+
+    const titleStr = (refMeta.title || refUrlInput || 'Reference').replace(/"/g, "'")
+    const authorStr = (refMeta.author || '').replace(/"/g, "'")
+    const yearStr = (refMeta.year || '').replace(/"/g, "'")
+    const siteStr = (refMeta.siteName || '').replace(/"/g, "'")
+    const urlStr = refMeta.url || refUrlInput.trim()
+
+    let blockParam = `[!reference(text="${titleStr}" url="${urlStr}"`
+    if (authorStr) blockParam += ` author="${authorStr}"`
+    if (yearStr) blockParam += ` year="${yearStr}"`
+    if (siteStr) blockParam += ` site="${siteStr}"`
+    blockParam += ')]'
+
+    const targetBlock = blocks[blockIndex]
+    // If targetBlock is paragraph and user clicked middle of paragraph, we can either split or insert reference block below
+    const nextNb = mk(blockParam)
+    commit([
+      ...blocks.slice(0, blockIndex + 1),
+      nextNb,
+      ...blocks.slice(blockIndex + 1),
+    ])
+    setRefModalOpen(false)
+    focusBlock(nextNb.id)
+  }
+
   useImperativeHandle(ref, () => ({
     format: formatActive,
     setType: t => { const b = blocks[activeIndex]; if (b) { const text = convertText(b.text, t); updateText(b.id, text); focusBlock(b.id) } },
     insertBlock,
     focusFirst: () => focusBlock(blocks[0].id, 'start'),
+    openReferenceDialog: openGeneralRefModal,
   }))
 
   const slashQuery = activeText !== null && /^\/[\w ]*$/.test(activeText) ? activeText.slice(1) : null
@@ -717,6 +851,22 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                   <IconBtn icon={Copy} label="Duplicate block" onClick={() => duplicate(i)} keepFocus />
                   <IconBtn icon={Plus} label="Add block below" onClick={() => addAt(i + 1)} keepFocus />
                   <IconBtn icon={Trash2} label="Delete block" onClick={() => remove(i)} keepFocus className="hover:!bg-neutral-100 hover:!text-neutral-900" />
+                  <span className="mx-0.5 h-4 w-px bg-slate-200" />
+                  <button
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      const el = taRefs.current[b.id]
+                      const pos = el ? el.selectionStart : b.text.length
+                      const found = findSentenceAt(b.text, pos) || { sentence: b.text.slice(0, 50), end: b.text.length }
+                      openSentenceRefModal(b.id, found.sentence, found.end)
+                    }}
+                    className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-neutral-800 transition-colors hover:bg-neutral-100"
+                    title="রেফারেন্স যুক্ত করুন / Add reference to sentence"
+                  >
+                    <BookmarkPlus size={13} className="text-neutral-700" />
+                    <span>রেফারেন্স</span>
+                  </button>
                 </div>
               )}
 
@@ -729,6 +879,7 @@ const BlockEditor = forwardRef<BlockEditorApi, {
                     placeholder={blocks.length === 1 ? 'Start writing, or type / to add a block' : 'Type / to add a block'}
                     onChange={e => updateText(b.id, e.target.value)}
                     onKeyDown={e => onKeyDown(e, b, i)}
+                    onClick={e => handleTextareaClick(e, b)}
                     onPaste={e => onPaste(e, b, i)}
                     className={`block w-full resize-none overflow-hidden border-0 bg-transparent p-0 outline-none placeholder:text-slate-300 ${BLOCK_TA[type]}`}
                   />
@@ -758,6 +909,185 @@ const BlockEditor = forwardRef<BlockEditorApi, {
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-slate-300 bg-transparent py-3 text-sm font-medium text-slate-500 transition-colors hover:border-[#3858e9] hover:bg-slate-50/50 hover:text-[#3858e9]">
         <Plus size={14} /> Add block
       </button>
+
+      {/* Floating sentence reference popover */}
+      {sentencePopup && (
+        <div
+          style={{ top: `${sentencePopup.rect.top}px`, left: `${sentencePopup.rect.left}px` }}
+          className="fixed z-50 flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-150"
+        >
+          <span className="max-w-[140px] truncate text-xs text-neutral-500 font-medium">
+            &ldquo;{sentencePopup.sentenceText}&rdquo;
+          </span>
+          <button
+            type="button"
+            onClick={() => openSentenceRefModal(sentencePopup.blockId, sentencePopup.sentenceText, sentencePopup.insertIndex)}
+            className="flex items-center gap-1.5 rounded-full bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-neutral-800"
+          >
+            <BookmarkPlus size={13} />
+            রেফারেন্স যোগ করুন
+          </button>
+          <button
+            type="button"
+            onClick={() => setSentencePopup(null)}
+            className="rounded-full p-0.5 text-neutral-400 hover:text-neutral-700"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
+      {/* Reference Modal Dialog */}
+      <AnimatePresence>
+        {refModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
+            onClick={() => setRefModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              role="dialog"
+              aria-modal="true"
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-lg overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-100 text-neutral-900">
+                    <BookOpen size={16} />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-semibold text-neutral-900">সেন্টেন্সে রেফারেন্স যোগ করুন</h3>
+                    <p className="text-xs text-neutral-500">ইউআরএল দিলে স্বয়ংক্রিয়ভাবে টাইটেল ও তথ্য ফেচ হবে</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRefModalOpen(false)}
+                  className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-4 p-6">
+                {refTarget?.sentenceText && (
+                  <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/70 p-3">
+                    <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider block mb-1">
+                      নির্বাচিত সেন্টেন্স / Selected Sentence
+                    </span>
+                    <p className="text-xs text-neutral-800 italic line-clamp-2">
+                      &ldquo;{refTarget.sentenceText}&rdquo;
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-neutral-700">রেফারেন্স ইউআরএল (URL)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      autoFocus
+                      placeholder="https://example.com/article"
+                      value={refUrlInput}
+                      onChange={e => handleRefUrlChange(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          fetchUrlMeta(refUrlInput)
+                        }
+                      }}
+                      className="min-w-0 flex-1 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm text-neutral-900 outline-none transition-shadow focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 placeholder:text-neutral-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fetchUrlMeta(refUrlInput)}
+                      disabled={refLoading || !refUrlInput.trim()}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 px-4 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-40"
+                    >
+                      {refLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+                      ফেচ করুন
+                    </button>
+                  </div>
+                  {refError && <p className="text-xs text-amber-700">{refError}</p>}
+                </div>
+
+                <div className="space-y-3 pt-1 border-t border-neutral-100">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-neutral-600">টাইটেল / Title</label>
+                    <input
+                      type="text"
+                      placeholder="নিবন্ধ বা তথ্যের শিরোনাম"
+                      value={refMeta.title}
+                      onChange={e => setRefMeta(m => ({ ...m, title: e.target.value }))}
+                      className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-neutral-600">লেখক বা সোর্স / Author</label>
+                      <input
+                        type="text"
+                        placeholder="যেমন: BBC News, Prothom Alo"
+                        value={refMeta.author}
+                        onChange={e => setRefMeta(m => ({ ...m, author: e.target.value }))}
+                        className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-neutral-600">বছর / Year</label>
+                        <input
+                          type="text"
+                          placeholder="2026"
+                          value={refMeta.year}
+                          onChange={e => setRefMeta(m => ({ ...m, year: e.target.value }))}
+                          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-neutral-600">সাইটের নাম</label>
+                        <input
+                          type="text"
+                          placeholder="ওয়েবসাইট"
+                          value={refMeta.siteName}
+                          onChange={e => setRefMeta(m => ({ ...m, siteName: e.target.value }))}
+                          className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-100">
+                  <button
+                    type="button"
+                    onClick={() => setRefModalOpen(false)}
+                    className="rounded-full border border-neutral-200 px-4 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-50"
+                  >
+                    বাতিল / Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmInsertReference}
+                    disabled={!refUrlInput.trim() && !refMeta.title.trim()}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-40"
+                  >
+                    <Check size={14} />
+                    রেফারেন্স যোগ করুন
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 })
@@ -1369,6 +1699,17 @@ const EditorPage = ({ searchParams }: { searchParams: Promise<{ id?: string }> }
             <IconBtn icon={List} label="Bulleted list" keepFocus disabled={visualDisabled} onClick={() => applyType('ul')} />
             <IconBtn icon={ListOrdered} label="Numbered list" keepFocus disabled={visualDisabled} onClick={() => applyType('ol')} />
             <IconBtn icon={Quote} label="Quote" keepFocus disabled={visualDisabled} onClick={() => applyType('quote')} />
+            <span className="mx-1 h-5 w-px shrink-0 bg-slate-200" />
+            <button
+              type="button"
+              disabled={visualDisabled}
+              onClick={() => blockApi.current?.openReferenceDialog()}
+              className="flex h-8 items-center gap-1.5 rounded-full border border-neutral-200 px-3 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-30"
+              title="Add Reference (সেন্টেন্সে রেফারেন্স যুক্ত করুন)"
+            >
+              <BookmarkPlus size={14} />
+              <span>রেফারেন্স</span>
+            </button>
             <span className="ml-auto flex shrink-0 items-center gap-3 pl-3">
               {mode === 'code' && isDesktop && (
                 <button type="button" onClick={() => setSplitPreview(s => !s)} aria-pressed={splitPreview}
