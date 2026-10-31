@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
@@ -283,8 +284,15 @@ export function Header({
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-2.5 flex-shrink-0 select-none h-full">
-            <div className="flex flex-col leading-none h-full justify-center">
-              <h1 className={`${banglaFontlogo.className} text-3xl font-[900] text-slate-950`}>অনলি্হিন্দু™</h1>
+            <div className="flex items-center h-full">
+              <Image
+                src="/logo.png"
+                alt="the Hindu Campus"
+                width={343}
+                height={42}
+                priority
+                className="h-8 sm:h-9 w-auto object-contain"
+              />
             </div>
           </Link>
 
@@ -469,8 +477,15 @@ export function Header({
               {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
             <Link href={`/${locale}`} className="flex items-center gap-2.5 flex-shrink-0 select-none h-full">
-              <div className="flex flex-col leading-none h-full justify-center">
-                <h1 className={`${banglaFontlogo.className} text-2xl font-[900]`}>অনলি্হিন্দু™</h1>
+              <div className="flex items-center h-full">
+                <Image
+                  src="/logo.png"
+                  alt="the Hindu Campus"
+                  width={343}
+                  height={42}
+                  priority
+                  className="h-7 w-auto object-contain"
+                />
               </div>
             </Link>
           </div>

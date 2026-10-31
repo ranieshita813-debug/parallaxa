@@ -37,7 +37,7 @@ export async function GET(
   try {
     ;
     [logoData, playfairData, tiroBanglaData] = await Promise.all([
-      fetch(new URL('/New%20Project%2025%20%5B4D921DE%5D.png', origin)).then(r => {
+      fetch(new URL('/logo.png', origin)).then(r => {
         if (!r.ok) throw new Error(`Logo fetch failed: ${r.status}`)
         return r.arrayBuffer()
       }),
