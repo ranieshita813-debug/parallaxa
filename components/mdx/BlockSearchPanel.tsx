@@ -7,7 +7,7 @@ import {
   Minus, SquarePlus, Share2, Terminal, Palette, Box,
   Youtube, Facebook, Twitter, Instagram, X, Search,
   XCircle, List as ListIcon, Grid3x3, ArrowUpDown, ChevronRight,
-  TrendingUp, Info, Tag
+  TrendingUp, Info, Tag, Book
 } from 'lucide-react'
 
 export type BlockSortKey = 'name' | 'label' | 'recent'
@@ -23,6 +23,7 @@ export const DynamicIcon = ({ name, size = 18, className }: { name: string; size
     'terminal': Terminal, 'palette': Palette, 'extension': Box,
     'youtube': Youtube, 'facebook': Facebook, 'twitter': Twitter, 'instagram': Instagram,
     'trending_up': TrendingUp, 'info': Info, 'tag': Tag,
+    'book': Book,
   };
   const Icon = iconMap[name] || Box;
   return <Icon size={size} className={className} />;
