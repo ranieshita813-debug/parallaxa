@@ -92,11 +92,14 @@
 @layer base {
   *, ::before, ::after {
     @apply border-border outline-ring/50;
-    border-radius: 0 !important;
+    border-radius: 0;
   }
   body {
     font-family: var(--font-sans), var(--font-bangla);
     @apply bg-background text-foreground;
+  }
+  .bangla-handdrawn {
+    font-family: var(--font-bangla-hand), 'Atma', cursive;
   }
   #post-title {
     font-family: var(--font-serif), var(--font-bangla-logo);

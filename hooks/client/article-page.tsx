@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, Children, isValidElement, ComponentPropsWithoutRef } from 'react'
-import rehypeMermaid from 'rehype-mermaid'
+import { useState, useEffect, useRef, useCallback, Children, isValidElement, ComponentPropsWithoutRef, useId } from 'react'
 import { toDigitalNumber } from '@/components/news-card'
 import PinwheelLoader from '@/components/logo'
 import Markdown, { Components } from 'react-markdown'
@@ -27,7 +26,7 @@ import CommentsSection from '@/components/article/CommentsSection'
 import FramedQuote from '@/components/mdx/FramedCornersQuote'
 import {
   Check, Copy, ArrowLeft, ChevronRight, Bookmark, BookmarkCheck,
-  Printer, Share2, Link as LinkIcon, Clock, Eye,
+  Printer, Share2, Link as LinkIcon, Clock, Eye, X, ZoomIn,
 } from 'lucide-react'
 import { FaFacebook, FaTwitter, FaLinkedinIn } from 'react-icons/fa'
 
@@ -71,16 +70,84 @@ function formatFullDate(dateStr: string): string {
   })
 }
 
-function authorInitials(name?: string): string {
-  if (!name) return '?'
-  return name.split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+/* ------------------------------------------------------------------ */
+/* Client-side Mermaid Diagram Component                              */
+/* ------------------------------------------------------------------ */
+
+function MermaidDiagram({
+  chart,
+  onRendered,
+}: {
+  chart: string
+  onRendered?: () => void
+}) {
+  const [svg, setSvg] = useState('')
+  const [err, setErr] = useState('')
+  const rid = 'mmd' + useId().replace(/[^a-zA-Z0-9]/g, '')
+
+  useEffect(() => {
+    let off = false
+    const t = setTimeout(async () => {
+      try {
+        const mermaid = (await import('mermaid')).default
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'neutral',
+          securityLevel: 'strict',
+          themeVariables: {
+            fontSize: '18px',
+            fontFamily: "'Atma', var(--font-bangla-hand), cursive, sans-serif",
+          },
+          look: 'handDrawn',
+          handDrawnSeed: 14,
+          flowchart: {
+            curve: 'basis',
+          },
+        } as any)
+        const { svg } = await mermaid.render(rid, chart)
+        if (!off) {
+          setSvg(svg)
+          setErr('')
+          onRendered?.()
+        }
+      } catch (e: any) {
+        if (!off) {
+          setErr(e?.message?.split('\n')[0] || 'Diagram syntax error.')
+          onRendered?.()
+        }
+      }
+    }, 150)
+    return () => {
+      off = true
+      clearTimeout(t)
+    }
+  }, [chart, rid, onRendered])
+
+  if (err && !svg) {
+    return (
+      <div className="my-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        Diagram error: {err}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="my-6 flex justify-center overflow-x-auto py-2"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  )
 }
 
 /* ------------------------------------------------------------------ */
 /* Code block                                                          */
 /* ------------------------------------------------------------------ */
 
-function CodeBlock({ children, className }: ComponentPropsWithoutRef<'code'>) {
+function CodeBlock({
+  children,
+  className,
+  onDiagramRendered,
+}: ComponentPropsWithoutRef<'code'> & { onDiagramRendered?: () => void }) {
   const [copied, setCopied] = useState(false)
   const lang = className?.replace('language-', '') ?? 'text'
   const code = typeof children === 'string' ? children : String(children ?? '')
@@ -88,15 +155,19 @@ function CodeBlock({ children, className }: ComponentPropsWithoutRef<'code'>) {
 
   if (isInline) {
     return (
-      <code className="break-all rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-700">
+      <code className="break-all rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-700">
         {children}
       </code>
     )
   }
 
+  if (lang === 'mermaid') {
+    return <MermaidDiagram chart={code} onRendered={onDiagramRendered} />
+  }
+
   return (
-    <div className="relative my-6 max-w-full overflow-hidden rounded-xl border border-slate-700 bg-[#1e1e1e] text-gray-100">
-      <div className="flex items-center justify-between border-b border-[#3a3a3a] bg-[#2a2a2a] px-4 py-1.5">
+    <div className="relative my-6 max-w-full overflow-hidden rounded-2xl border border-slate-700 bg-[#1e1e1e] text-gray-100">
+      <div className="flex items-center justify-between border-b border-[#3a3a3a] bg-[#2a2a2a] px-4 py-2">
         <span className="mr-2 truncate font-mono text-[11px] uppercase tracking-widest text-gray-400">{lang}</span>
         <button
           onClick={async () => {
@@ -108,13 +179,13 @@ function CodeBlock({ children, className }: ComponentPropsWithoutRef<'code'>) {
               /* clipboard blocked: ignore */
             }
           }}
-          className="flex min-h-[36px] shrink-0 items-center gap-1.5 text-xs text-gray-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          className="flex min-h-[32px] shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs text-gray-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto px-4 py-3 font-mono text-xs leading-relaxed sm:text-sm">
+      <pre className="overflow-x-auto px-4 py-3.5 font-mono text-xs leading-relaxed sm:text-sm">
         <code>{code}</code>
       </pre>
     </div>
@@ -209,12 +280,126 @@ const mdComponents: Components = {
   },
 }
 
-function ArticleMarkdown({ content, dbBlocks }: { content: string; dbBlocks: DBBlockConfig[] }) {
+function ArticleMarkdown({
+  content,
+  dbBlocks,
+  onImageClick,
+  onDiagramRendered,
+}: {
+  content: string
+  dbBlocks: DBBlockConfig[]
+  onImageClick?: (src: string, alt?: string, caption?: string) => void
+  onDiagramRendered?: () => void
+}) {
+  const components: Components = {
+    ...customBlockComponents,
+    pre: ({ children }) => <>{children}</>,
+    code: ({ children, className, ...rest }) => (
+      <CodeBlock
+        className={className}
+        onDiagramRendered={onDiagramRendered}
+        {...rest}
+      >
+        {children}
+      </CodeBlock>
+    ),
+    h1: ({ children }) => (
+      <h1 style={headingFont} className="mb-3 mt-10 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">{children}</h1>
+    ),
+    h2: ({ children }) => (
+      <h2 style={headingFont} className="mb-3 mt-10 text-2xl font-bold leading-snug text-slate-900 sm:text-[28px]">{children}</h2>
+    ),
+    h3: ({ children }) => (
+      <h3 style={headingFont} className="mb-2 mt-8 text-xl font-bold leading-snug text-slate-900 sm:text-2xl">{children}</h3>
+    ),
+    p: ({ children }) => <p className="my-5 text-[18px] leading-[1.9] text-slate-800">{children}</p>,
+    ul: ({ children }) => (
+      <ul className="my-5 flex list-disc flex-col gap-2 pl-6 text-[18px] leading-[1.8] text-slate-800 marker:text-red-600">{children}</ul>
+    ),
+    ol: ({ children }) => (
+      <ol className="my-5 flex list-decimal flex-col gap-2 pl-6 text-[18px] leading-[1.8] text-slate-800 marker:font-bold marker:text-red-600">{children}</ol>
+    ),
+    li: ({ children }) => <li className="pl-1">{children}</li>,
+    blockquote: ({ children }) => {
+      const items = Children.toArray(children).filter(isValidElement)
+      const last = items[items.length - 1]
+      const lastText = last ? getText(last).trim() : ''
+
+      const hasAuthor = lastText.startsWith('—') || lastText.startsWith('-')
+      const author = hasAuthor ? lastText.replace(/^[—-]\s*/, '') : undefined
+      const quoteChildren = hasAuthor ? items.slice(0, -1) : items
+
+      return <FramedQuote author={author}>{quoteChildren}</FramedQuote>
+    },
+    table: ({ children }) => (
+      <div className="my-8 max-w-full overflow-x-auto rounded-xl border border-slate-200">
+        <table className="w-full border-collapse text-sm">{children}</table>
+      </div>
+    ),
+    thead: ({ children }) => <thead className="border-b-2 border-slate-900 bg-slate-50">{children}</thead>,
+    tbody: ({ children }) => <tbody>{children}</tbody>,
+    tr: ({ children }) => (
+      <tr className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50">{children}</tr>
+    ),
+    th: ({ children }) => (
+      <th className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-slate-600">{children}</th>
+    ),
+    td: ({ children }) => <td className="px-4 py-3 tabular-nums text-slate-800">{children}</td>,
+    hr: () => <hr className="my-10 border-slate-200" />,
+    strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>,
+    em: ({ children }) => <em className="italic">{children}</em>,
+    a: ({ href, children }) => {
+      const isHash = href?.startsWith('#')
+      return (
+        <a
+          href={href}
+          target={isHash ? undefined : '_blank'}
+          rel={isHash ? undefined : 'noopener noreferrer'}
+          className="font-medium text-red-700 underline decoration-red-300 underline-offset-[3px] transition-colors hover:text-red-800 hover:decoration-red-700"
+        >
+          {children}
+        </a>
+      )
+    },
+    img: ({ node, className: imgClass = '', ...props }) => {
+      const { alt, src } = props
+      const match = alt?.match(/^(.+?)(?:\s|\\s)*\{caption:(.+?)\}$/)
+      const imageAlt = match ? match[1].trim() : alt
+      const caption = match ? match[2].trim() : null
+      const imgSrc = typeof src === 'string' ? src : ''
+
+      return (
+        <figure className="group my-8 flex flex-col" data-type="image-figure">
+          <div
+            onClick={() => onImageClick?.(imgSrc, imageAlt, caption || undefined)}
+            className="relative cursor-zoom-in overflow-hidden rounded-xl bg-slate-100"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imgSrc}
+              alt={imageAlt ?? ''}
+              loading="lazy"
+              className={`max-w-full transition-transform duration-300 group-hover:scale-[1.01] ${imgClass}`}
+            />
+            <div className="absolute right-3 top-3 rounded-full bg-black/60 p-1.5 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+              <ZoomIn className="h-4 w-4" />
+            </div>
+          </div>
+          {caption && (
+            <figcaption className="mt-2 border-l-2 border-red-600 pl-3 text-sm leading-relaxed text-slate-600">
+              {caption}
+            </figcaption>
+          )}
+        </figure>
+      )
+    },
+  }
+
   return (
     <Markdown
       remarkPlugins={[remarkGfm, remarkMath, [createCustomBlockPlugin, dbBlocks] as any]}
-      rehypePlugins={[rehypeRaw, rehypeKatex, [rehypeMermaid, { strategy: 'pre-mermaid' }]]}
-      components={mdComponents}
+      rehypePlugins={[rehypeRaw, rehypeKatex]}
+      components={components}
     >
       {content}
     </Markdown>
@@ -347,24 +532,25 @@ export default function ArticlePage({
   const [copied, setCopied] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt?: string; caption?: string } | null>(null)
+
+  // Detect whether content has mermaid or complex blocks that need render time
+  const hasDiagrams = Boolean(article?.content && /```\s*mermaid/i.test(article.content))
+  const [diagramsReady, setDiagramsReady] = useState(!hasDiagrams)
 
   const shareRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLElement>(null)
   const progress = useReadingProgress(bodyRef)
 
-  // Mermaid diagrams (client side)
+  // Safety fallback: if diagrams take more than 2 seconds or fail, reveal the content
   useEffect(() => {
-    if (typeof window !== 'undefined' && article?.content) {
-      import('mermaid')
-        .then((m) => {
-          m.default.initialize({ startOnLoad: true, theme: 'default' })
-          setTimeout(() => {
-            m.default.run().catch((err) => console.error('Mermaid rendering error:', err))
-          }, 100)
-        })
-        .catch((err) => console.error('Failed to dynamically load mermaid:', err))
+    if (hasDiagrams && !diagramsReady) {
+      const timer = setTimeout(() => {
+        setDiagramsReady(true)
+      }, 2000)
+      return () => clearTimeout(timer)
     }
-  }, [article?.content])
+  }, [hasDiagrams, diagramsReady])
 
   // Sync props / fetch by slug
   useEffect(() => {
@@ -483,13 +669,21 @@ export default function ArticlePage({
 
   /* ---------------- loading / not found ---------------- */
 
-  if (isLoading) {
+  const pageLoading = isLoading || (hasDiagrams && !diagramsReady)
+
+  if (pageLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-white">
         <Header />
-        <div className="flex h-full flex-1 items-center justify-center">
-          <PinwheelLoader size={100} color="#A8A8A8" />
+        <div className="flex min-h-[60vh] flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <PinwheelLoader size={100} color="#A8A8A8" />
+            <p className="animate-pulse text-sm font-medium text-slate-500">
+              {locale === 'bn' ? 'আর্টিকেল লোড হচ্ছে...' : 'Loading article...'}
+            </p>
+          </div>
         </div>
+        <Footer />
       </div>
     )
   }
@@ -516,7 +710,7 @@ export default function ArticlePage({
   const categoryHref = `/${locale}/category/${encodeURIComponent(article.category)}`
   const showHero = Boolean(article.image) && !hasFirstImage(article.content)
   const iconBtn =
-    'inline-flex min-h-[44px] items-center gap-2 rounded-full border border-slate-300 px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
+    'inline-flex min-h-[44px] items-center gap-2 rounded-full border border-slate-300 bg-transparent px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -555,10 +749,10 @@ export default function ArticlePage({
                   {article.category}
                 </Link>
                 {article.breaking && (
-                  <span className="bg-red-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-white">Breaking</span>
+                  <span className="rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-white">Breaking</span>
                 )}
                 {article.trending && (
-                  <span className="flex items-center gap-1.5 border border-orange-300 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-orange-700">
+                  <span className="flex items-center gap-1.5 rounded-full border border-orange-300 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-orange-700">
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-500" aria-hidden />
                     Trending
                   </span>
@@ -575,29 +769,22 @@ export default function ArticlePage({
                 <p className="mt-4 text-lg leading-relaxed text-slate-600 md:text-xl">{article.description}</p>
               )}
 
-              {/* Byline */}
+              {/* Byline: author profile picture hidden, only name displayed */}
               <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-y border-slate-200 py-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 leading-tight">
+                  <span className="text-xs text-slate-500">By</span>
                   <Link
-                    href={`/${locale}/author/${article.author_id}`}
-                    aria-label={article.author}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white"
+                    href={`/${locale}/author/${article.author_id || article.author}`}
+                    className={`${serifFont.className} text-[16px] font-bold text-slate-900 hover:text-red-700`}
                   >
-                    {authorInitials(article.author)}
+                    {article.author}
                   </Link>
-                  <div className="leading-tight">
-                    <Link
-                      href={`/${locale}/author/${article.author_id}`}
-                      className={`${serifFont.className} text-[15px] font-bold text-slate-900 hover:text-red-700`}
-                    >
-                      {article.author}
-                    </Link>
-                    <p className="mt-1 text-xs text-slate-500">
-                      <time dateTime={new Date(article.date).toISOString()} title={formatFullDate(article.date.toString())}>
-                        {formatRelativeTime(article.date.toString())}
-                      </time>
-                    </p>
-                  </div>
+                  <span className="text-slate-300">•</span>
+                  <p className="text-xs text-slate-500">
+                    <time dateTime={new Date(article.date).toISOString()} title={formatFullDate(article.date.toString())}>
+                      {formatRelativeTime(article.date.toString())}
+                    </time>
+                  </p>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-slate-500">
                   <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" aria-hidden />{readTime} min read</span>
@@ -610,7 +797,7 @@ export default function ArticlePage({
                 <button
                   onClick={toggleBookmark}
                   aria-pressed={bookmarked}
-                  className={`${iconBtn} ${bookmarked ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-50' : ''}`}
+                  className={`${iconBtn} ${bookmarked ? 'border-red-300 bg-red-50/50 text-red-700 hover:bg-red-50' : ''}`}
                 >
                   {bookmarked ? <BookmarkCheck className="h-4 w-4" aria-hidden /> : <Bookmark className="h-4 w-4" aria-hidden />}
                   {bookmarked ? 'Saved' : 'Save'}
@@ -636,16 +823,22 @@ export default function ArticlePage({
 
               {/* Hero image */}
               {showHero && (
-                <figure className="mt-6">
-                  <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                <figure className="group relative mt-6">
+                  <div
+                    onClick={() => setPreviewImage({ src: article.image, alt: article.title, caption: article.imageCaption })}
+                    className="relative aspect-video w-full cursor-zoom-in overflow-hidden rounded-2xl bg-slate-100"
+                  >
                     <Image
                       src={article.image}
                       alt={article.title}
                       fill
                       priority
                       sizes="(min-width: 1024px) 720px, 100vw"
-                      className="object-cover"
+                      className="object-cover transition-transform duration-300 group-hover:scale-[1.01]"
                     />
+                    <div className="absolute right-3 top-3 rounded-full bg-black/60 p-2 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                      <ZoomIn className="h-4 w-4" />
+                    </div>
                   </div>
                   {article.imageCaption && (
                     <figcaption className="mt-2 border-l-2 border-red-600 pl-3 text-sm leading-relaxed text-slate-600">
@@ -657,7 +850,12 @@ export default function ArticlePage({
 
               {/* Body: constrained to a comfortable reading width */}
               <article ref={bodyRef} className="mx-auto max-w-[44rem] break-words pb-6 pt-2 lg:mx-0">
-                <ArticleMarkdown content={article.content} dbBlocks={dbBlocks} />
+                <ArticleMarkdown
+                  content={article.content}
+                  dbBlocks={dbBlocks}
+                  onImageClick={(src, alt, caption) => setPreviewImage({ src, alt, caption })}
+                  onDiagramRendered={() => setDiagramsReady(true)}
+                />
               </article>
 
               {/* Reactions */}
@@ -666,13 +864,35 @@ export default function ArticlePage({
                 <ReactionButtons articleId={article.id} />
               </div>
 
-              {/* Bottom share bar */}
+              {/* Bottom share bar with rounded and transparent buttons */}
               <div className="no-print mb-12 flex flex-wrap items-center gap-3">
                 <span className="text-sm font-bold uppercase tracking-widest text-slate-900">Share</span>
-                <button onClick={handleShareTwitter} aria-label="Share on X / Twitter" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"><FaTwitter className="h-4 w-4" aria-hidden /></button>
-                <button onClick={handleShareFacebook} aria-label="Share on Facebook" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"><FaFacebook className="h-4 w-4" aria-hidden /></button>
-                <button onClick={handleShareLinkedin} aria-label="Share on LinkedIn" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"><FaLinkedinIn className="h-4 w-4" aria-hidden /></button>
-                <button onClick={handleCopyLink} aria-label="Copy link" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900">
+                <button
+                  onClick={handleShareTwitter}
+                  aria-label="Share on X / Twitter"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 bg-transparent text-slate-700 transition-colors hover:bg-slate-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                >
+                  <FaTwitter className="h-4 w-4" aria-hidden />
+                </button>
+                <button
+                  onClick={handleShareFacebook}
+                  aria-label="Share on Facebook"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 bg-transparent text-slate-700 transition-colors hover:bg-slate-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                >
+                  <FaFacebook className="h-4 w-4" aria-hidden />
+                </button>
+                <button
+                  onClick={handleShareLinkedin}
+                  aria-label="Share on LinkedIn"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 bg-transparent text-slate-700 transition-colors hover:bg-slate-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                >
+                  <FaLinkedinIn className="h-4 w-4" aria-hidden />
+                </button>
+                <button
+                  onClick={handleCopyLink}
+                  aria-label="Copy link"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 bg-transparent text-slate-700 transition-colors hover:bg-slate-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                >
                   {copied ? <Check className="h-4 w-4 text-green-600" aria-hidden /> : <LinkIcon className="h-4 w-4" aria-hidden />}
                 </button>
               </div>
@@ -761,6 +981,42 @@ export default function ArticlePage({
           </div>
         </div>
       </main>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md transition-opacity"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-[95vw] overflow-hidden rounded-2xl bg-slate-900/40 p-2 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setPreviewImage(null)}
+              aria-label="Close preview"
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-colors hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="relative flex max-h-[80vh] items-center justify-center overflow-auto">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewImage.src}
+                alt={previewImage.alt || 'Preview image'}
+                className="max-h-[80vh] max-w-full rounded-xl object-contain shadow-md"
+              />
+            </div>
+            {(previewImage.caption || previewImage.alt) && (
+              <div className="mt-3 px-3 py-1 text-center text-sm text-slate-200">
+                {previewImage.caption || previewImage.alt}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

@@ -22,6 +22,18 @@ export const banglaFontlogo = localFont({
   variable: '--font-bangla-logo'
 })
 
+// Bangla Hand-drawn / Sketch Font: Atma
+export const banglaHandDrawnFont = localFont({
+  src: [
+    {
+      path: '../public/local/font/Atma-Regular.ttf',
+      style: 'normal',
+      weight: '400'
+    }
+  ],
+  variable: '--font-bangla-hand'
+})
+
 // Body Font: Miranda Sans (exported as sansFont)
 export const sansFont = localFont({
   src: [
