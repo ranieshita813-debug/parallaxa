@@ -22,6 +22,8 @@ import { createCustomBlockPlugin, DBBlockConfig } from '@/lib/mdx/block-registry
 import '@/lib/mdx/blocks'
 import { customBlockComponents } from '@/components/mdx/CustomBlockRenderer'
 import FramedQuote from '@/components/mdx/FramedCornersQuote'
+import { ReferencesSection } from '@/components/ReferencesSection'
+import { processArticleReferences } from '@/lib/references'
 import {
   Check, Copy, ArrowLeft, ChevronRight, Bookmark, BookmarkCheck,
   Printer, Share2, Link as LinkIcon, Clock, Eye, X, ZoomIn,
@@ -346,11 +348,26 @@ function ArticleMarkdown({
     hr: () => <hr className="my-10 border-slate-200" />,
     strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>,
     em: ({ children }) => <em className="italic">{children}</em>,
-    a: ({ href, children }) => {
+    a: ({ href, title, children }) => {
+      const isRef = href?.startsWith('#ref-')
+      if (isRef) {
+        return (
+          <sup className="mx-0.5 inline-block text-[0.8em] font-bold">
+            <a
+              href={href}
+              title={title}
+              className="text-blue-600 underline decoration-blue-300 underline-offset-2 transition-colors hover:text-blue-800 hover:decoration-blue-700"
+            >
+              [{children}]
+            </a>
+          </sup>
+        )
+      }
       const isHash = href?.startsWith('#')
       return (
         <a
           href={href}
+          title={title}
           target={isHash ? undefined : '_blank'}
           rel={isHash ? undefined : 'noopener noreferrer'}
           className="font-medium text-red-700 underline decoration-red-300 underline-offset-[3px] transition-colors hover:text-red-800 hover:decoration-red-700"
@@ -848,12 +865,22 @@ export default function ArticlePage({
 
               {/* Body: constrained to a comfortable reading width */}
               <article ref={bodyRef} className="mx-auto max-w-[44rem] break-words pb-6 pt-2 lg:mx-0">
-                <ArticleMarkdown
-                  content={article.content}
-                  dbBlocks={dbBlocks}
-                  onImageClick={(src, alt, caption) => setPreviewImage({ src, alt, caption })}
-                  onDiagramRendered={() => setDiagramsReady(true)}
-                />
+                {(() => {
+                  const { content: processedContent, references } = processArticleReferences(article.content)
+                  return (
+                    <>
+                      <ArticleMarkdown
+                        content={processedContent}
+                        dbBlocks={dbBlocks}
+                        onImageClick={(src, alt, caption) => setPreviewImage({ src, alt, caption })}
+                        onDiagramRendered={() => setDiagramsReady(true)}
+                      />
+                      {references.length > 0 && (
+                        <ReferencesSection references={references} locale={locale} />
+                      )}
+                    </>
+                  )
+                })()}
               </article>
 
               {/* Bottom share bar with rounded and transparent buttons */}

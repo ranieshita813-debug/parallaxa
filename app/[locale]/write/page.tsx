@@ -32,6 +32,8 @@ import { createCustomBlockPlugin, blockRegistry, DBBlockConfig } from '@/lib/mdx
 import '@/lib/mdx/blocks'
 import { customBlockComponents } from '@/components/mdx/CustomBlockRenderer'
 import FramedQuote from '@/components/mdx/FramedCornersQuote'
+import { ReferencesSection } from '@/components/ReferencesSection'
+import { processArticleReferences } from '@/lib/references'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 
@@ -298,11 +300,34 @@ const mdComponents: Components = {
   hr: () => <hr className="my-8 border-slate-200" />,
   strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>,
   em: ({ children }) => <em className="italic text-slate-600">{children}</em>,
-  a: ({ href, children }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#3858e9] underline decoration-[#3858e9]/30 underline-offset-2 transition-colors hover:decoration-[#3858e9]">
-      {children}
-    </a>
-  ),
+  a: ({ href, title, children }) => {
+    const isRef = href?.startsWith('#ref-')
+    if (isRef) {
+      return (
+        <sup className="mx-0.5 inline-block text-[0.8em] font-bold">
+          <a
+            href={href}
+            title={title}
+            className="text-blue-600 underline decoration-blue-300 underline-offset-2 transition-colors hover:text-blue-800"
+          >
+            [{children}]
+          </a>
+        </sup>
+      )
+    }
+    const isHash = href?.startsWith('#')
+    return (
+      <a
+        href={href}
+        title={title}
+        target={isHash ? undefined : '_blank'}
+        rel={isHash ? undefined : 'noopener noreferrer'}
+        className="text-[#3858e9] underline decoration-[#3858e9]/30 underline-offset-2 transition-colors hover:decoration-[#3858e9]"
+      >
+        {children}
+      </a>
+    )
+  },
 }
 
 const REHYPE = [rehypeRaw, rehypeKatex] as any
@@ -328,6 +353,11 @@ function Badges({ meta }: { meta: Meta }) {
 }
 
 function ArticleView({ title, content, meta, dbBlocks }: { title: string; content: string; meta: Meta; dbBlocks: DBBlockConfig[] }) {
+  const { content: processedContent, references } = useMemo(
+    () => processArticleReferences(content),
+    [content]
+  )
+
   return (
     <article className={`${slabo.className} ${meta.cssClass}`}>
       <div className="mb-6"><Badges meta={meta} /></div>
@@ -338,9 +368,16 @@ function ArticleView({ title, content, meta, dbBlocks }: { title: string; conten
         {meta.category && <span>{meta.category}</span>}
         <span className="flex items-center gap-1"><Clock size={12} />{estimateReadTime(content)} min read</span>
       </div>
-      {content.trim()
-        ? <MarkdownView content={content} dbBlocks={dbBlocks} />
-        : <p className="py-16 text-center italic text-slate-300">Nothing to preview yet.</p>}
+      {content.trim() ? (
+        <>
+          <MarkdownView content={processedContent} dbBlocks={dbBlocks} />
+          {references.length > 0 && (
+            <ReferencesSection references={references} locale="bn" />
+          )}
+        </>
+      ) : (
+        <p className="py-16 text-center italic text-slate-300">Nothing to preview yet.</p>
+      )}
       {meta.tags.length > 0 && (
         <div className="mt-10 flex flex-wrap gap-2 border-t border-slate-100 pt-6">
           {meta.tags.map(t => <span key={t} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">#{t}</span>)}
@@ -719,7 +756,16 @@ const BlockEditor = forwardRef<BlockEditorApi, {
     blockParam += ')]'
 
     const targetBlock = blocks[blockIndex]
-    // If targetBlock is paragraph and user clicked middle of paragraph, we can either split or insert reference block below
+    // If user selected a specific sentence inside the block, insert the reference right after that sentence
+    if (refTarget.insertIndex !== undefined && refTarget.insertIndex >= 0 && refTarget.insertIndex <= targetBlock.text.length) {
+      const idx = refTarget.insertIndex
+      const newText = targetBlock.text.slice(0, idx) + ' ' + blockParam + targetBlock.text.slice(idx)
+      updateText(targetBlock.id, newText)
+      setRefModalOpen(false)
+      focusBlock(targetBlock.id, idx + blockParam.length + 1)
+      return
+    }
+
     const nextNb = mk(blockParam)
     commit([
       ...blocks.slice(0, blockIndex + 1),
@@ -1128,7 +1174,7 @@ const customBlockHighlight = ViewPlugin.fromClass(class {
   update(u: ViewUpdate) { if (u.docChanged || u.viewportChanged) this.decorations = this.build(u.view) }
   build(view: EditorView) {
     const builder = new RangeSetBuilder<Decoration>()
-    const regex = /\[!.+?\(url=".+?"\)\]/g
+    const regex = /\[!.+?\([\s\S]*?\)\]/g
     const text = view.state.doc.toString()
     let m
     while ((m = regex.exec(text)) !== null) builder.add(m.index, m.index + m[0].length, Decoration.mark({ class: 'cm-custom-block' }))

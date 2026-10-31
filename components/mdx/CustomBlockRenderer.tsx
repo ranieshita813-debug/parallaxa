@@ -197,49 +197,21 @@ export const customBlockComponents = {
     )
   },
   reference: (props: any) => {
-    const title = props.text || props.title || 'রেফারেন্স / Reference'
-    const author = props.author || ''
-    const year = props.year || ''
-    const site = props.site || props.siteName || ''
-    const description = props.description || ''
+    const title = props.text || props.title || 'তথ্যসূত্র'
     const url = props.url || ''
-
+    const index = props.index || 1
     return (
-      <div className="my-4 rounded-xl border border-neutral-200 bg-neutral-50/80 p-3.5 transition-colors hover:border-neutral-300">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 shadow-xs">
-            <Book size={14} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500 mb-1">
-              <span className="font-semibold text-neutral-800">{author || site || 'সূত্র / Source'}</span>
-              {year && <span>• ({year})</span>}
-              {site && author && <span>• {site}</span>}
-            </div>
-            {url ? (
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center gap-1.5 text-sm font-semibold text-neutral-900 transition-colors hover:text-blue-700 hover:underline"
-              >
-                <span className="line-clamp-2">{title}</span>
-                <ExternalLink size={12} className="shrink-0 text-neutral-400 group-hover:text-blue-700" />
-              </a>
-            ) : (
-              <p className="text-sm font-semibold text-neutral-900 line-clamp-2">{title}</p>
-            )}
-            {description && (
-              <p className="mt-1 line-clamp-2 text-xs text-neutral-600 leading-relaxed">{description}</p>
-            )}
-            {url && (
-              <p className="mt-1.5 truncate text-[11px] font-mono text-neutral-400">
-                {url}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+      <sup className="mx-0.5 inline-block text-[0.8em] font-semibold">
+        <a
+          href={url || `#ref-${index}`}
+          title={title}
+          target={url ? '_blank' : undefined}
+          rel={url ? 'noopener noreferrer' : undefined}
+          className="text-blue-600 hover:text-blue-800 underline decoration-blue-300 hover:underline"
+        >
+          [{index}]
+        </a>
+      </sup>
     )
   },
   tika: (props: any) => (
