@@ -23,25 +23,32 @@ import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import HomeSectionManager from '@/components/dashboard/HomeSectionManager';
 import PipelineManager from '@/components/dashboard/PipelineManager';
 import UserManager from '@/components/dashboard/UserManager';
-import { Lightning, Users } from '@phosphor-icons/react';
+import PagesManager from '@/components/dashboard/PagesManager';
+import { Lightning, Users, Browsers } from '@phosphor-icons/react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function Dashboard() {
   const { data: session } = useSession();
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = params?.locale as string || 'bn';
   const isDesktop = !useIsMobile();
-  const [currentActiveTab, setCurrentActiveTab] = useState('overview');
+  const initialTab = searchParams?.get('tab') || 'overview';
+  const [currentActiveTab, setCurrentActiveTab] = useState(initialTab);
+
+  const isBn = locale === 'bn';
 
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: House, component: <DashboardOverview /> },
-    { id: 'articles', label: 'Articles', icon: FileText, component: <ArticlesView /> },
-    { id: 'analysis', label: 'Analysis', icon: ChartBar, component: <AnalysisView /> },
+    { id: 'overview', label: isBn ? 'ওভারভিউ' : 'Overview', icon: House, component: <DashboardOverview /> },
+    { id: 'articles', label: isBn ? 'নিবন্ধসমূহ' : 'Articles', icon: FileText, component: <ArticlesView /> },
+    { id: 'analysis', label: isBn ? 'অ্যানালাইসিস' : 'Analysis', icon: ChartBar, component: <AnalysisView /> },
+    { id: 'pages', label: isBn ? 'পেইজসমূহ' : 'Pages', icon: Browsers, component: <PagesManager />, adminOnly: true },
     { id: 'pipeline', label: 'AI Pipeline', icon: Lightning, component: <PipelineManager />, adminOnly: true },
-    { id: 'users', label: 'Users', icon: Users, component: <UserManager />, adminOnly: true },
-    { id: 'home-manager', label: 'Home Manager', icon: ListChecks, component: <HomeSectionManager />, adminOnly: true },
-    { id: 'menu-manager', label: 'Menu Manager', icon: List, href: `/${locale}/admin/menu`, adminOnly: true },
-    { id: 'settings', label: 'Settings', icon: Gear, href: `/${locale}/admin/settings`, adminOnly: true },
+    { id: 'users', label: isBn ? 'ব্যবহারকারী' : 'Users', icon: Users, component: <UserManager />, adminOnly: true },
+    { id: 'home-manager', label: isBn ? 'হোম ম্যানেজার' : 'Home Manager', icon: ListChecks, component: <HomeSectionManager />, adminOnly: true },
+    { id: 'menu-manager', label: isBn ? 'মেনু ম্যানেজার' : 'Menu Manager', icon: List, href: `/${locale}/admin/menu`, adminOnly: true },
+    { id: 'settings', label: isBn ? 'সেটিংস' : 'Settings', icon: Gear, href: `/${locale}/admin/settings`, adminOnly: true },
   ];
 
   const isAdmin = session?.user?.role === 'admin';

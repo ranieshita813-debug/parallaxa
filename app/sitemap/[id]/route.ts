@@ -26,6 +26,7 @@ import {
   getUniqueArticleDates,
   getArticlesByDate,
 } from '@/lib/db/articles'
+import { getPublishedPages } from '@/lib/db/pages'
 
 const BASE_URL = (
   process.env.NEXT_PUBLIC_BASE_URL ?? 'https://bangladeshhinduunion.org'
@@ -102,8 +103,8 @@ function buildXml(entries: string[]): string {
 
 // ── Segment builders ──────────────────────────────────────────────────────────
 
-/** Segment 0 — static pages + all category pages */
-function buildStaticSegment(): string {
+/** Segment 0 — static pages + all category pages + custom pages */
+async function buildStaticSegment(): Promise<string> {
   const entries: string[] = [
     urlEntry({
       loc: BASE_URL,
@@ -127,6 +128,18 @@ function buildStaticSegment(): string {
         priority: 0.8,
         changefreq: 'daily',
       }),
+    )
+  }
+
+  const customPages = await getPublishedPages()
+  for (const p of customPages) {
+    entries.push(
+      urlEntry({
+        loc: `${BASE_URL}/${p.slug}`,
+        lastmod: p.updatedAt ?? p.createdAt,
+        priority: 0.7,
+        changefreq: 'monthly',
+      })
     )
   }
   
@@ -170,7 +183,7 @@ export async function GET(
     let xml: string
     
     if (segmentId === 0) {
-      xml = buildStaticSegment()
+      xml = await buildStaticSegment()
     } else {
       const dates = await getUniqueArticleDates()
       const dateString = dates[segmentId - 1] // id=1 → dates[0], id=2 → dates[1], …
