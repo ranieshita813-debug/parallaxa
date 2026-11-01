@@ -71,7 +71,11 @@ export async function proxy(req: NextRequest) {
   }
 
   // 1. Skip static assets, API routes, AI routes (no locale, no auth check needed)
-  if (pathname.startsWith('/api/') || pathname === '/api') {
+  if (
+    pathname.startsWith('/api/') ||
+    pathname === '/api' ||
+    /\.(?:png|jpg|jpeg|gif|webp|svg|ico|ttf|otf|woff|woff2|json|txt|xml|pdf)$/i.test(pathname)
+  ) {
     return NextResponse.next()
   }
 
@@ -114,6 +118,6 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|placeholder|icons|images|fonts).*)',
+    '/((?!_next/static|_next/image|favicon.ico|placeholder|icons|images|fonts|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|ttf|otf|woff|woff2|json|txt|xml|pdf)$).*)',
   ],
 }

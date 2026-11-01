@@ -9,6 +9,7 @@ import rehypeRaw from 'rehype-raw'
 import { auth } from '@/auth'
 import Link from 'next/link'
 import { CalendarBlank } from '@phosphor-icons/react/dist/ssr'
+import { RUNTIME_COMPONENTS } from '@/lib/editor-context'
 
 export async function generateMetadata({
   params,
@@ -117,7 +118,11 @@ export default async function DynamicCustomPage({
 
           {/* Content Body */}
           <div className="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:leading-relaxed prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-800 prose-img:rounded-2xl">
-            <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw as any]}>
+            <Markdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw as any]}
+              components={RUNTIME_COMPONENTS as any}
+            >
               {page.content}
             </Markdown>
           </div>

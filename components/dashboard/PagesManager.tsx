@@ -206,13 +206,15 @@ export default function PagesManager() {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center gap-2 bg-slate-950 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-800 transition-all self-start sm:self-auto shadow-sm"
-        >
-          <Plus size={18} weight="bold" />
-          {isBn ? 'নতুন পেইজ তৈরি করুন' : 'Create New Page'}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/${locale}/admin/pages/editor`}
+            className="inline-flex items-center gap-2 bg-slate-950 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-800 transition-all self-start sm:self-auto shadow-sm"
+          >
+            <Plus size={18} weight="bold" />
+            {isBn ? 'নতুন পেইজ তৈরি করুন' : 'Create New Page'}
+          </Link>
+        </div>
       </div>
 
       {/* Filter / Search Bar */}
@@ -319,14 +321,14 @@ export default function PagesManager() {
                         <ArrowSquareOut size={16} />
                       </Link>
 
-                      {/* Edit */}
-                      <button
-                        onClick={() => handleOpenEdit(page)}
+                      {/* Edit in Rich Page Editor */}
+                      <Link
+                        href={`/${locale}/admin/pages/editor?id=${page.id}`}
                         className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-                        title={isBn ? 'সম্পাদনা করুন' : 'Edit Page'}
+                        title={isBn ? 'এডিটরে সম্পাদনা করুন' : 'Edit in Full Editor'}
                       >
                         <PencilSimple size={16} />
-                      </button>
+                      </Link>
 
                       {/* Delete */}
                       <button
