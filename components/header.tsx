@@ -16,6 +16,7 @@ import {
   FlaskConical,
   Activity,
   MessageSquare,
+  BookOpen,
   X,
   Languages,
   ChevronDown,
@@ -36,12 +37,14 @@ const BANGLA_NAV_MAP: Record<string, string> = {
   Science: 'বিজ্ঞান',
   Health: 'স্বাস্থ্য',
   Opinion: 'মতামত',
+  Gita: 'গীতা',
   'Latest News': 'সর্বশেষ সংবাদ',
   Latest: 'সর্বশেষ',
 }
 
 const DEFAULT_NAV_LINKS = [
   { href: '/', label: 'প্রচ্ছদ', icon: Home, key: 'Home' },
+  { href: '/gita', label: 'গীতা', icon: BookOpen, key: 'Gita' },
   { href: '/category/World', label: 'বিশ্ব', icon: Globe, key: 'World' },
   { href: '/category/Technology', label: 'প্রযুক্তি', icon: Cpu, key: 'Technology' },
   { href: '/category/Business', label: 'বাণিজ্য', icon: Briefcase, key: 'Business' },
@@ -59,7 +62,8 @@ const ICON_MAP: Record<string, any> = {
   Trophy,
   FlaskConical,
   Activity,
-  MessageSquare
+  MessageSquare,
+  BookOpen
 }
 
 function sanitizeSvg(svg: string): string {
