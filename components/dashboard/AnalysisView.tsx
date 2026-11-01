@@ -4,8 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import {
   BarChart, LineChart, PieChart, Activity, TrendingUp, Users, Eye,
-  ChevronRight, Calendar, ArrowUpRight, ArrowDownRight, Layers
+  ChevronRight, Calendar, ArrowUpRight, ArrowDownRight, Layers, Sparkles
 } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
 interface AnalysisData {
   label: string;
@@ -18,7 +19,29 @@ interface TimeData {
   value: number;
 }
 
+const bnDigits: { [key: string]: string } = {
+  '0': '০',
+  '1': '১',
+  '2': '২',
+  '3': '৩',
+  '4': '৪',
+  '5': '৫',
+  '6': '৬',
+  '7': '৭',
+  '8': '৮',
+  '9': '৯',
+};
+
+function toBanglaNumber(n: number | string): string {
+  const s = n.toLocaleString('en-US');
+  return s.replace(/\d/g, (d) => bnDigits[d] || d);
+}
+
 export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'bn';
+  const isBn = locale === 'bn';
+
   const barChartRef = useRef<SVGSVGElement>(null);
   const lineChartRef = useRef<SVGSVGElement>(null);
   const pieChartRef = useRef<SVGSVGElement>(null);
@@ -26,15 +49,15 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
   useEffect(() => {
-    setLastUpdated(new Date().toLocaleTimeString());
-  }, []);
+    setLastUpdated(new Date().toLocaleTimeString(isBn ? 'bn-BD' : 'en-US'));
+  }, [isBn]);
 
   const categoryData: AnalysisData[] = data || [
-    { label: 'World', value: 450, secondaryValue: 120 },
-    { label: 'Tech', value: 890, secondaryValue: 340 },
-    { label: 'Business', value: 320, secondaryValue: 90 },
-    { label: 'Sports', value: 610, secondaryValue: 210 },
-    { label: 'Health', value: 240, secondaryValue: 60 },
+    { label: isBn ? 'আন্তর্জাতিক' : 'World', value: 450, secondaryValue: 120 },
+    { label: isBn ? 'প্রযুক্তি' : 'Tech', value: 890, secondaryValue: 340 },
+    { label: isBn ? 'ব্যবসা' : 'Business', value: 320, secondaryValue: 90 },
+    { label: isBn ? 'খেলাধুলা' : 'Sports', value: 610, secondaryValue: 210 },
+    { label: isBn ? 'স্বাস্থ্য' : 'Health', value: 240, secondaryValue: 60 },
   ];
 
   const trendData: TimeData[] = Array.from({ length: 14 }).map((_, i) => ({
@@ -56,24 +79,33 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
 
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const x = d3.scaleBand().rangeRound([0, width]).padding(0.3).domain(categoryData.map(d => d.label));
-    const y = d3.scaleLinear().rangeRound([height, 0]).domain([0, d3.max(categoryData, d => Math.max(d.value, d.secondaryValue || 0)) as number * 1.1]);
+    const x = d3.scaleBand().rangeRound([0, width]).padding(0.35).domain(categoryData.map(d => d.label));
+    const y = d3.scaleLinear().rangeRound([height, 0]).domain([0, (d3.max(categoryData, d => Math.max(d.value, d.secondaryValue || 0)) as number) * 1.15]);
+
+    // Background horizontal grid lines
+    g.append("g")
+      .attr("class", "grid")
+      .call(d3.axisLeft(y).ticks(5).tickSize(-width).tickFormat(() => ""))
+      .attr("stroke-dasharray", "3 3")
+      .attr("color", "#f1f5f9");
 
     g.append("g")
       .attr("transform", `translate(0,${height})`)
       .call(d3.axisBottom(x))
-      .attr("color", "#e5e7eb")
+      .attr("color", "#cbd5e1")
       .selectAll("text")
-      .attr("color", "#6b7280")
-      .attr("font-size", "10px");
+      .attr("color", "#475569")
+      .attr("font-size", "11px")
+      .attr("font-weight", "600");
 
     g.append("g")
       .call(d3.axisLeft(y).ticks(5))
-      .attr("color", "#e5e7eb")
+      .attr("color", "#cbd5e1")
       .selectAll("text")
-      .attr("color", "#6b7280")
+      .attr("color", "#64748b")
       .attr("font-size", "10px");
 
+    // Primary bars
     g.selectAll(".bar")
       .data(categoryData)
       .enter().append("rect")
@@ -82,11 +114,11 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
       .attr("y", d => y(d.value))
       .attr("width", x.bandwidth())
       .attr("height", d => height - y(d.value))
-      .attr("fill", "#0a0a0a")
-      .attr("rx", 4)
-      .attr("ry", 4);
+      .attr("fill", "#09090b")
+      .attr("rx", 6)
+      .attr("ry", 6);
 
-    // Secondary bars (ghost)
+    // Secondary comparison bar
     g.selectAll(".bar-secondary")
       .data(categoryData)
       .enter().append("rect")
@@ -94,9 +126,9 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
       .attr("y", d => y(d.secondaryValue || 0))
       .attr("width", x.bandwidth() * 0.5)
       .attr("height", d => height - y(d.secondaryValue || 0))
-      .attr("fill", "#ef4444")
-      .attr("opacity", 0.7)
-      .attr("rx", 2);
+      .attr("fill", "#94a3b8")
+      .attr("opacity", 0.6)
+      .attr("rx", 4);
 
   }, [categoryData, activeTab]);
 
@@ -115,7 +147,7 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     const x = d3.scaleTime().range([0, width]).domain(d3.extent(trendData, d => d.date) as [Date, Date]);
-    const y = d3.scaleLinear().range([height, 0]).domain([0, d3.max(trendData, d => d.value) as number * 1.2]);
+    const y = d3.scaleLinear().rangeRound([height, 0]).domain([0, (d3.max(trendData, d => d.value) as number) * 1.2]);
 
     const line = d3.line<TimeData>()
       .x(d => x(d.date))
@@ -128,30 +160,39 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
       .y1(d => y(d.value))
       .curve(d3.curveMonotoneX);
 
+    // Background horizontal grid lines
+    g.append("g")
+      .attr("class", "grid")
+      .call(d3.axisLeft(y).ticks(5).tickSize(-width).tickFormat(() => ""))
+      .attr("stroke-dasharray", "3 3")
+      .attr("color", "#f1f5f9");
+
     g.append("path")
       .datum(trendData)
-      .attr("fill", "rgba(10, 10, 10, 0.05)")
+      .attr("fill", "rgba(15, 23, 42, 0.06)")
       .attr("d", area);
 
     g.append("path")
       .datum(trendData)
       .attr("fill", "none")
-      .attr("stroke", "#0a0a0a")
-      .attr("stroke-width", 2)
+      .attr("stroke", "#020617")
+      .attr("stroke-width", 2.5)
       .attr("d", line);
 
     g.append("g")
       .attr("transform", `translate(0,${height})`)
       .call(d3.axisBottom(x).ticks(5))
-      .attr("color", "#e5e7eb")
+      .attr("color", "#cbd5e1")
       .selectAll("text")
-      .attr("color", "#6b7280");
+      .attr("color", "#64748b")
+      .attr("font-size", "10px");
 
     g.append("g")
       .call(d3.axisLeft(y).ticks(5))
-      .attr("color", "#e5e7eb")
+      .attr("color", "#cbd5e1")
       .selectAll("text")
-      .attr("color", "#6b7280");
+      .attr("color", "#64748b")
+      .attr("font-size", "10px");
 
     // Add points
     g.selectAll(".dot")
@@ -159,10 +200,10 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
       .enter().append("circle")
       .attr("cx", d => x(d.date))
       .attr("cy", d => y(d.value))
-      .attr("r", 3)
+      .attr("r", 4)
       .attr("fill", "#ffffff")
-      .attr("stroke", "#0a0a0a")
-      .attr("stroke-width", 1.5);
+      .attr("stroke", "#09090b")
+      .attr("stroke-width", 2);
 
   }, [trendData, activeTab]);
 
@@ -174,7 +215,7 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
 
     const width = 600;
     const height = 300;
-    const radius = Math.min(width, height) / 2 - 40;
+    const radius = Math.min(width, height) / 2 - 35;
 
     svg.attr("viewBox", `0 0 600 300`).attr("preserveAspectRatio", "xMidYMid meet");
 
@@ -182,10 +223,10 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
 
     const color = d3.scaleOrdinal<string>()
       .domain(categoryData.map(d => d.label))
-      .range(['#0a0a0a', '#374151', '#6b7280', '#9ca3af', '#d1d5db']);
+      .range(['#09090b', '#334155', '#64748b', '#94a3b8', '#cbd5e1']);
 
     const pie = d3.pie<AnalysisData>().value(d => d.value);
-    const arc = d3.arc<d3.PieArcDatum<AnalysisData>>().innerRadius(radius * 0.6).outerRadius(radius);
+    const arc = d3.arc<d3.PieArcDatum<AnalysisData>>().innerRadius(radius * 0.55).outerRadius(radius);
     const outerArc = d3.arc<d3.PieArcDatum<AnalysisData>>().innerRadius(radius * 1.1).outerRadius(radius * 1.1);
 
     const arcs = g.selectAll(".arc")
@@ -195,7 +236,9 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
 
     arcs.append("path")
       .attr("d", arc)
-      .attr("fill", d => color(d.data.label));
+      .attr("fill", d => color(d.data.label))
+      .attr("stroke", "#ffffff")
+      .attr("stroke-width", 2);
 
     // Labels
     arcs.append("text")
@@ -206,9 +249,9 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
         return (midangle < Math.PI ? 'start' : 'end');
       })
       .text(d => d.data.label)
-      .attr("fill", "#6b7280")
-      .attr("font-size", "10px")
-      .attr("font-weight", "500");
+      .attr("fill", "#475569")
+      .attr("font-size", "11px")
+      .attr("font-weight", "600");
 
   }, [categoryData, activeTab]);
 
@@ -217,50 +260,84 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Views', value: '1.2M', trend: '+12.5%', icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Avg. Read Time', value: '4m 32s', trend: '+0.8%', icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { label: 'Engagement Rate', value: '24.8%', trend: '-2.4%', icon: Activity, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: 'Active Readers', value: '18.4K', trend: '+15.2%', icon: Users, color: 'text-orange-600', bg: 'bg-orange-50' },
+          {
+            label: isBn ? 'মোট ভিউ' : 'Total Views',
+            value: isBn ? '১.২ মিলিয়ন' : '1.2M',
+            trend: '+১২.৫%',
+            icon: Eye,
+          },
+          {
+            label: isBn ? 'গড় পড়ার সময়' : 'Avg. Read Time',
+            value: isBn ? '৪ মিনিট ৩২ সেকেন্ড' : '4m 32s',
+            trend: '+০.৮%',
+            icon: Calendar,
+          },
+          {
+            label: isBn ? 'পাঠক সম্পৃক্ততা' : 'Engagement Rate',
+            value: isBn ? '২৪.৮%' : '24.8%',
+            trend: '-২.৪%',
+            icon: Activity,
+          },
+          {
+            label: isBn ? 'সক্রিয় পাঠক' : 'Active Readers',
+            value: isBn ? '১৮.৪ হাজার' : '18.4K',
+            trend: '+১৫.২%',
+            icon: Users,
+          },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-            <div className="flex justify-between items-start mb-4">
-              <div className={`${stat.bg} ${stat.color} p-2.5 rounded-xl group-hover:scale-110 transition-transform`}>
-                <stat.icon size={20} />
+          <div
+            key={i}
+            className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group"
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div className="bg-slate-100 text-slate-800 p-2.5 rounded-2xl group-hover:bg-slate-950 group-hover:text-white transition-colors">
+                <stat.icon size={18} />
               </div>
-              <div className={`flex items-center gap-1 text-xs font-medium ${stat.trend.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+              <div
+                className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
+                  stat.trend.startsWith('+')
+                    ? 'text-emerald-700 bg-emerald-50'
+                    : 'text-rose-700 bg-rose-50'
+                }`}
+              >
                 {stat.trend}
-                {stat.trend.startsWith('+') ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                {stat.trend.startsWith('+') ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
               </div>
             </div>
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">{stat.label}</p>
-            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">{stat.label}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-slate-950">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
-        <div className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Main Intelligence & Charts Container */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/40">
           <div>
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Layers className="text-red-600" size={24} />
-              Platform Intelligence
+            <h3 className="text-lg font-extrabold text-slate-950 flex items-center gap-2">
+              <Layers className="text-slate-900" size={20} />
+              {isBn ? 'প্ল্যাটফর্ম অ্যানালাইসিস ও ট্রেন্ডস' : 'Platform Intelligence'}
             </h3>
-            <p className="text-sm text-gray-500 mt-1">Advanced analytics and data visualization.</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {isBn
+                ? 'বিভাগভিত্তিক পাঠকপ্রিয়তা এবং সাম্প্রতিক নিবন্ধ পাঠের গ্রাফিক্যাল বিবরণ।'
+                : 'Advanced real-time engagement and distribution insights.'}
+            </p>
           </div>
 
-          <div className="flex bg-gray-50 p-1 rounded-xl shrink-0 overflow-x-auto no-scrollbar">
+          <div className="flex bg-slate-100 p-1 rounded-2xl shrink-0 overflow-x-auto border border-slate-200/60">
             {[
-              { id: 'overview', label: 'Overview', icon: BarChart },
-              { id: 'trends', label: 'Trends', icon: LineChart },
-              { id: 'distribution', label: 'Share', icon: PieChart },
+              { id: 'overview', label: isBn ? 'ওভারভিউ' : 'Overview', icon: BarChart },
+              { id: 'trends', label: isBn ? 'ট্রেন্ডস' : 'Trends', icon: LineChart },
+              { id: 'distribution', label: isBn ? 'শেয়ার' : 'Distribution', icon: PieChart },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-slate-950 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-950'
                 }`}
               >
                 <tab.icon size={14} />
@@ -270,8 +347,8 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
           </div>
         </div>
 
-        <div className="p-4 sm:p-8">
-          <div className="w-full aspect-[2/1] min-h-[250px] sm:min-h-[300px] flex items-center justify-center">
+        <div className="p-6 sm:p-8">
+          <div className="w-full aspect-[2/1] min-h-[260px] sm:min-h-[300px] flex items-center justify-center">
             {activeTab === 'overview' && (
               <svg ref={barChartRef} width="100%" height="100%" className="max-h-[300px] overflow-visible"></svg>
             )}
@@ -283,31 +360,34 @@ export default function AnalysisView({ data }: { data?: AnalysisData[] }) {
             )}
           </div>
 
-          <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
-            {categoryData.map((d, i) => (
-              <div key={d.label} className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-white hover:shadow-lg transition-all group">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2 h-2 rounded-full bg-gray-900 group-hover:scale-125 transition-transform" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 truncate">{d.label}</p>
+          {/* Breakdown cards */}
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {categoryData.map((d) => (
+              <div
+                key={d.label}
+                className="p-4 bg-slate-50/70 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-xs transition-all"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-900" />
+                  <p className="text-[11px] font-bold text-slate-500 truncate">{d.label}</p>
                 </div>
-                <p className="text-xl font-bold text-gray-900">{d.value.toLocaleString()}</p>
-                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-green-600 bg-green-50 w-fit px-1.5 py-0.5 rounded-full">
-                  <TrendingUp size={10} />
-                  +{(Math.random() * 20).toFixed(1)}%
+                <p className="text-lg font-extrabold text-slate-950">
+                  {isBn ? toBanglaNumber(d.value) : d.value.toLocaleString()}
+                </p>
+                <div className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 w-fit px-1.5 py-0.5 rounded-md">
+                  <TrendingUp size={11} />
+                  <span>+{isBn ? toBanglaNumber((Math.random() * 15 + 5).toFixed(1)) : (Math.random() * 15 + 5).toFixed(1)}%</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-gray-50/50 px-8 py-4 flex items-center justify-between">
-          <p className="text-xs text-gray-400 font-medium flex items-center gap-2">
-            <TrendingUp size={14} className="text-green-500" />
-            Last updated: {lastUpdated}
+        <div className="bg-slate-50/70 px-6 py-3.5 border-t border-slate-100 flex items-center justify-between text-xs">
+          <p className="text-slate-400 font-medium flex items-center gap-1.5">
+            <TrendingUp size={14} className="text-emerald-600" />
+            {isBn ? `সর্বশেষ আপডেট: ${lastUpdated}` : `Last updated: ${lastUpdated}`}
           </p>
-          <button className="text-xs font-bold text-gray-900 flex items-center gap-1 hover:gap-2 transition-all">
-            Full Report <ChevronRight size={14} />
-          </button>
         </div>
       </div>
     </div>
