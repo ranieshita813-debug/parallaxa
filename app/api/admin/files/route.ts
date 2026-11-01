@@ -38,6 +38,18 @@ function isBlocked(relPath: string): boolean {
   return BLOCKED_PATTERNS.some(p => p.test(normalized) || p.test(path.basename(normalized)))
 }
 
+export function isServerlessReadOnly(): boolean {
+  // Common serverless environment indicators where the root filesystem is read-only
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT) {
+    return true
+  }
+  // If cwd starts with /var/task or is known serverless root
+  if (process.cwd().startsWith('/var/task')) {
+    return true
+  }
+  return false
+}
+
 interface FileNode {
   name: string
   path: string
@@ -128,6 +140,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Writing to ${topLevelDir} is not permitted.` }, { status: 403 })
     }
 
+    if (isServerlessReadOnly()) {
+      return NextResponse.json(
+        {
+          error:
+            'File system is read-only in this serverless deployment environment (e.g. Vercel / AWS Lambda). Project source files cannot be modified directly on disk at runtime. To create or edit custom pages, please use the Page Editor which saves pages in the database.',
+          readOnly: true,
+          code: 'EROFS',
+        },
+        { status: 403 }
+      )
+    }
+
     // Check if directory exists, create if needed
     const dir = path.dirname(fullPath)
     if (!fs.existsSync(dir)) {
@@ -147,6 +171,17 @@ export async function POST(req: NextRequest) {
     })
   } catch (e: any) {
     console.error('Failed to write file:', e)
+    if (e.code === 'EROFS' || e.message?.includes('read-only file system') || e.message?.includes('EROFS')) {
+      return NextResponse.json(
+        {
+          error:
+            'File system is read-only in this serverless deployment environment. Project source files cannot be modified directly on disk at runtime. To create or edit custom pages, please use the Page Editor which saves pages in the database.',
+          readOnly: true,
+          code: 'EROFS',
+        },
+        { status: 403 }
+      )
+    }
     return NextResponse.json({ error: `Failed to save file: ${e.message}` }, { status: 500 })
   }
 }
@@ -246,6 +281,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       root: 'app-root',
       tree,
+      readOnly: isServerlessReadOnly(),
     })
   } catch (e: any) {
     return NextResponse.json({ error: `Failed to scan directory: ${e.message}` }, { status: 500 })

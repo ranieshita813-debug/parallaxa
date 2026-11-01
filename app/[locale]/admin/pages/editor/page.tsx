@@ -117,6 +117,7 @@ export default function PageEditor() {
   // File Viewer State
   const [fileTree, setFileTree] = useState<FileNode[]>([])
   const [fileLoading, setFileLoading] = useState(false)
+  const [isReadOnlyFS, setIsReadOnlyFS] = useState(false)
   const [selectedFile, setSelectedFile] = useState<{ path: string; name: string; content: string | null; isBinary?: boolean; extension?: string } | null>(null)
   const [fileSearch, setFileSearch] = useState('')
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({ app: true, components: true, lib: true })
@@ -167,6 +168,9 @@ export default function PageEditor() {
       if (res.ok) {
         const data = await res.json()
         setFileTree(data.tree || [])
+        if (data.readOnly) {
+          setIsReadOnlyFS(true)
+        }
       }
     } catch (e) {
       console.error('Failed to load app files:', e)
@@ -210,13 +214,18 @@ export default function PageEditor() {
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to save file')
+      if (!res.ok) {
+        if (data.code === 'EROFS' || data.readOnly || data.error?.includes('read-only')) {
+          setIsReadOnlyFS(true)
+        }
+        throw new Error(data.error || 'Failed to save file')
+      }
 
       toast.success(isBn ? 'ফাইলটি সফলভাবে সেভ হয়েছে' : 'File saved successfully!')
       setFileIsDirty(false)
       setSelectedFile(prev => prev ? { ...prev, content: fileEditorContent } : null)
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save file')
+      toast.error(err.message || 'Failed to save file', { duration: 6000 })
     } finally {
       setIsFileSaving(false)
     }
@@ -793,9 +802,20 @@ export default function PageEditor() {
               <div className="flex items-center gap-2">
                 <FolderTree size={20} className="text-slate-800 shrink-0" />
                 <div>
-                  <h3 className="font-bold text-sm sm:text-base text-slate-950">Application Files & Source Explorer</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-sm sm:text-base text-slate-950">Application Files & Source Explorer</h3>
+                    {isReadOnlyFS && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                        {isBn ? 'রিড-অনলি মোড' : 'Read-Only Mode'}
+                      </span>
+                    )}
+                  </div>
                   <p className="hidden sm:block text-xs text-slate-500">
-                    Explore, read, and inspect all accessible code files in this Next.js project.
+                    {isReadOnlyFS
+                      ? (isBn
+                          ? 'সার্ভারলেস পরিবেশে ফাইল সিস্টেম রিড-অনলি থাকে। কাস্টম পেইজ তৈরির জন্য পেইজ এডিটর ব্যবহার করুন।'
+                          : 'In serverless deployments, project files are read-only. Custom pages are saved to the database.')
+                      : 'Explore, read, and inspect accessible code files in this Next.js project.'}
                   </p>
                 </div>
               </div>
@@ -858,19 +878,29 @@ export default function PageEditor() {
                       <div className="flex items-center gap-2">
                         {selectedFile.content !== null && !selectedFile.isBinary && (
                           <>
-                            <button
-                              type="button"
-                              onClick={handleSaveFileContent}
-                              disabled={isFileSaving || !fileIsDirty}
-                              className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white px-2.5 py-1 rounded-md text-[11px] font-sans font-semibold transition-colors shadow-xs"
-                            >
-                              {isFileSaving ? (
-                                <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                              ) : (
-                                <Save size={12} />
-                              )}
-                              <span>{isFileSaving ? 'Saving…' : fileIsDirty ? 'Save Changes *' : 'Saved'}</span>
-                            </button>
+                            {isReadOnlyFS ? (
+                              <span
+                                className="inline-flex items-center gap-1 bg-slate-800 text-amber-400 border border-amber-400/30 px-2.5 py-1 rounded-md text-[11px] font-sans"
+                                title="File system is read-only in serverless deployments. Use the Page Editor to save dynamic pages into the database."
+                              >
+                                <AlertCircle size={12} />
+                                <span>{isBn ? 'রিড-অনলি' : 'Read-Only'}</span>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={handleSaveFileContent}
+                                disabled={isFileSaving || !fileIsDirty}
+                                className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white px-2.5 py-1 rounded-md text-[11px] font-sans font-semibold transition-colors shadow-xs"
+                              >
+                                {isFileSaving ? (
+                                  <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                  <Save size={12} />
+                                )}
+                                <span>{isFileSaving ? 'Saving…' : fileIsDirty ? 'Save Changes *' : 'Saved'}</span>
+                              </button>
+                            )}
 
                             <button
                               type="button"
