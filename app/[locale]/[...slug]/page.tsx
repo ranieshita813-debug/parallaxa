@@ -77,11 +77,14 @@ export default async function DynamicCustomPage({
     }
   )
 
+  const showCard = page.showCard !== false
+  const showTitle = page.showTitle !== false
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
       <Header />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 md:py-12">
+      <main className={`flex-1 w-full mx-auto px-4 py-8 md:py-12 ${showCard ? 'max-w-4xl' : 'max-w-5xl'}`}>
         {page.status === 'draft' && (
           <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-2.5 rounded-xl font-medium flex items-center justify-between">
             <span>
@@ -95,38 +98,77 @@ export default async function DynamicCustomPage({
           </div>
         )}
 
-        <article className="bg-white border border-slate-200/70 rounded-3xl p-6 md:p-12 shadow-sm">
-          {/* Header */}
-          <header className="border-b border-slate-100 pb-6 mb-8">
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-950 mb-4 leading-tight">
-              {page.title}
-            </h1>
+        {showCard ? (
+          <article className="bg-white border border-slate-200/70 rounded-3xl p-6 md:p-12 shadow-sm">
+            {/* Header */}
+            {showTitle && (
+              <header className="border-b border-slate-100 pb-6 mb-8">
+                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-950 mb-4 leading-tight">
+                  {page.title}
+                </h1>
 
-            {page.description && (
-              <p className="text-base md:text-lg text-slate-600 mb-4 font-normal leading-relaxed">
-                {page.description}
-              </p>
+                {page.description && (
+                  <p className="text-base md:text-lg text-slate-600 mb-4 font-normal leading-relaxed">
+                    {page.description}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-4 text-xs font-semibold text-slate-400">
+                  <span className="flex items-center gap-1.5">
+                    <CalendarBlank size={14} />
+                    {formattedDate}
+                  </span>
+                </div>
+              </header>
             )}
 
-            <div className="flex items-center gap-4 text-xs font-semibold text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <CalendarBlank size={14} />
-                {formattedDate}
-              </span>
+            {/* Content Body */}
+            <div className="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:leading-relaxed prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-800 prose-img:rounded-2xl">
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw as any]}
+                components={RUNTIME_COMPONENTS as any}
+              >
+                {page.content}
+              </Markdown>
             </div>
-          </header>
+          </article>
+        ) : (
+          <div>
+            {/* Clean Full-Bleed Layout without card container */}
+            {showTitle && (
+              <header className="pb-6 mb-8 border-b border-slate-200/60">
+                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-slate-950 mb-4 leading-tight">
+                  {page.title}
+                </h1>
 
-          {/* Content Body */}
-          <div className="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:leading-relaxed prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-800 prose-img:rounded-2xl">
-            <Markdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw as any]}
-              components={RUNTIME_COMPONENTS as any}
-            >
-              {page.content}
-            </Markdown>
+                {page.description && (
+                  <p className="text-base md:text-lg text-slate-600 mb-4 font-normal leading-relaxed">
+                    {page.description}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-4 text-xs font-semibold text-slate-400">
+                  <span className="flex items-center gap-1.5">
+                    <CalendarBlank size={14} />
+                    {formattedDate}
+                  </span>
+                </div>
+              </header>
+            )}
+
+            {/* Content Body */}
+            <div className="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:leading-relaxed prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-800 prose-img:rounded-2xl">
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw as any]}
+                components={RUNTIME_COMPONENTS as any}
+              >
+                {page.content}
+              </Markdown>
+            </div>
           </div>
-        </article>
+        )}
       </main>
 
       <Footer />

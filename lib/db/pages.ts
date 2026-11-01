@@ -9,6 +9,8 @@ export interface Page {
   status: 'published' | 'draft'
   seoTitle?: string | null
   metaDescription?: string | null
+  showCard?: boolean
+  showTitle?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -21,6 +23,8 @@ export interface CreatePageInput {
   status?: 'published' | 'draft'
   seoTitle?: string
   metaDescription?: string
+  showCard?: boolean
+  showTitle?: boolean
 }
 
 export interface UpdatePageInput {
@@ -31,6 +35,8 @@ export interface UpdatePageInput {
   status?: 'published' | 'draft'
   seoTitle?: string
   metaDescription?: string
+  showCard?: boolean
+  showTitle?: boolean
 }
 
 export const RESERVED_SLUGS = new Set([
@@ -75,6 +81,8 @@ function mapRow(row: Record<string, unknown>): Page {
     status: (row.status as 'published' | 'draft') ?? 'published',
     seoTitle: (row.seo_title as string) ?? null,
     metaDescription: (row.meta_description as string) ?? null,
+    showCard: row.show_card !== false,
+    showTitle: row.show_title !== false,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
   }
@@ -156,7 +164,9 @@ export async function createPage(input: CreatePageInput): Promise<Page> {
       description,
       status,
       seo_title,
-      meta_description
+      meta_description,
+      show_card,
+      show_title
     ) VALUES (
       ${input.title},
       ${slug},
@@ -164,7 +174,9 @@ export async function createPage(input: CreatePageInput): Promise<Page> {
       ${input.description ?? null},
       ${input.status ?? 'published'},
       ${input.seoTitle ?? null},
-      ${input.metaDescription ?? null}
+      ${input.metaDescription ?? null},
+      ${input.showCard !== false},
+      ${input.showTitle !== false}
     )
     RETURNING *
   `
@@ -199,6 +211,8 @@ export async function updatePage(id: string, input: UpdatePageInput): Promise<Pa
       status = COALESCE(${input.status ?? null}, status),
       seo_title = COALESCE(${input.seoTitle ?? null}, seo_title),
       meta_description = COALESCE(${input.metaDescription ?? null}, meta_description),
+      show_card = COALESCE(${input.showCard ?? null}, show_card),
+      show_title = COALESCE(${input.showTitle ?? null}, show_title),
       updated_at = NOW()
     WHERE id = ${id}
     RETURNING *

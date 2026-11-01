@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
       status: data.status === 'draft' ? 'draft' : 'published',
       seoTitle: data.seoTitle ? String(data.seoTitle).trim() : undefined,
       metaDescription: data.metaDescription ? String(data.metaDescription).trim() : undefined,
+      showCard: data.showCard !== undefined ? Boolean(data.showCard) : true,
+      showTitle: data.showTitle !== undefined ? Boolean(data.showTitle) : true,
     })
 
     return NextResponse.json(newPage)
