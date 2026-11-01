@@ -44,6 +44,8 @@ export async function PUT(
       status: data.status !== undefined ? (data.status === 'draft' ? 'draft' : 'published') : undefined,
       seoTitle: data.seoTitle !== undefined ? String(data.seoTitle).trim() : undefined,
       metaDescription: data.metaDescription !== undefined ? String(data.metaDescription).trim() : undefined,
+      showCard: data.showCard !== undefined ? Boolean(data.showCard) : undefined,
+      showTitle: data.showTitle !== undefined ? Boolean(data.showTitle) : undefined,
     })
 
     return NextResponse.json(updated)

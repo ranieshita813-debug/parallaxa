@@ -95,6 +95,62 @@ function scanDir(dirPath: string, rootDir: string): FileNode[] {
   return result
 }
 
+export async function POST(req: NextRequest) {
+  const session = await auth()
+  if (!session || (session.user as any)?.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 })
+  }
+
+  try {
+    const body = await req.json()
+    const { path: requestedFile, content } = body
+
+    if (!requestedFile || typeof requestedFile !== 'string') {
+      return NextResponse.json({ error: 'File path is required.' }, { status: 400 })
+    }
+
+    if (typeof content !== 'string') {
+      return NextResponse.json({ error: 'File content must be a string.' }, { status: 400 })
+    }
+
+    const rootDir = process.cwd()
+    const cleanPath = path.normalize(requestedFile).replace(/^(\.\.(\/|\\|$))+/, '')
+    const fullPath = path.join(rootDir, cleanPath)
+
+    // Security check: ensure path is within rootDir and not blocked
+    if (!fullPath.startsWith(rootDir) || isBlocked(cleanPath)) {
+      return NextResponse.json({ error: 'Access denied: Cannot write to protected path.' }, { status: 403 })
+    }
+
+    // Check top-level permission
+    const topLevelDir = cleanPath.split(/[/\\]/)[0]
+    if (!ALLOWED_TOP_DIRS.has(topLevelDir)) {
+      return NextResponse.json({ error: `Writing to ${topLevelDir} is not permitted.` }, { status: 403 })
+    }
+
+    // Check if directory exists, create if needed
+    const dir = path.dirname(fullPath)
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+
+    // Write file
+    fs.writeFileSync(fullPath, content, 'utf8')
+
+    const stat = fs.statSync(fullPath)
+    return NextResponse.json({
+      success: true,
+      path: cleanPath,
+      name: path.basename(cleanPath),
+      size: stat.size,
+      updatedAt: stat.mtime,
+    })
+  } catch (e: any) {
+    console.error('Failed to write file:', e)
+    return NextResponse.json({ error: `Failed to save file: ${e.message}` }, { status: 500 })
+  }
+}
+
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session || (session.user as any)?.role !== 'admin') {

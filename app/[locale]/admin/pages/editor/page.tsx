@@ -100,6 +100,8 @@ export default function PageEditor() {
   const [description, setDescription] = useState('')
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<'published' | 'draft'>('published')
+  const [showCard, setShowCard] = useState<boolean>(true)
+  const [showTitle, setShowTitle] = useState<boolean>(true)
   const [seoTitle, setSeoTitle] = useState('')
   const [metaDescription, setMetaDescription] = useState('')
 
@@ -115,10 +117,13 @@ export default function PageEditor() {
   // File Viewer State
   const [fileTree, setFileTree] = useState<FileNode[]>([])
   const [fileLoading, setFileLoading] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<{ path: string; name: string; content: string | null; isBinary?: boolean } | null>(null)
+  const [selectedFile, setSelectedFile] = useState<{ path: string; name: string; content: string | null; isBinary?: boolean; extension?: string } | null>(null)
   const [fileSearch, setFileSearch] = useState('')
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({ app: true, components: true, lib: true })
   const [copiedCode, setCopiedCode] = useState(false)
+  const [fileEditorContent, setFileEditorContent] = useState<string>('')
+  const [isFileSaving, setIsFileSaving] = useState(false)
+  const [fileIsDirty, setFileIsDirty] = useState(false)
 
   const editorRef = useRef<any>(null)
 
@@ -142,6 +147,8 @@ export default function PageEditor() {
         setDescription(data.description || '')
         setContent(data.content || '')
         setStatus(data.status || 'published')
+        setShowCard(data.showCard !== false)
+        setShowTitle(data.showTitle !== false)
         setSeoTitle(data.seoTitle || '')
         setMetaDescription(data.metaDescription || '')
       } catch (err: any) {
@@ -179,11 +186,39 @@ export default function PageEditor() {
       if (res.ok) {
         const data = await res.json()
         setSelectedFile(data)
+        setFileEditorContent(data.content || '')
+        setFileIsDirty(false)
       } else {
         toast.error('Could not read file')
       }
     } catch {
       toast.error('Failed to read file')
+    }
+  }
+
+  const handleSaveFileContent = async () => {
+    if (!selectedFile) return
+    setIsFileSaving(true)
+    try {
+      const res = await fetch('/api/admin/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: selectedFile.path,
+          content: fileEditorContent,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to save file')
+
+      toast.success(isBn ? 'ফাইলটি সফলভাবে সেভ হয়েছে' : 'File saved successfully!')
+      setFileIsDirty(false)
+      setSelectedFile(prev => prev ? { ...prev, content: fileEditorContent } : null)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save file')
+    } finally {
+      setIsFileSaving(false)
     }
   }
 
@@ -249,6 +284,8 @@ export default function PageEditor() {
         content,
         description: description.trim() || undefined,
         status,
+        showCard,
+        showTitle,
         seoTitle: seoTitle.trim() || undefined,
         metaDescription: metaDescription.trim() || undefined,
       }
@@ -341,11 +378,11 @@ export default function PageEditor() {
       <Header />
 
       {/* ── TOP ACTION BAR ── */}
-      <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-2xs">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 flex flex-wrap min-h-14 items-center justify-between border-b border-slate-200 bg-white px-3 sm:px-4 py-2 gap-2 shadow-2xs">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href={`/${locale}/dashboard?tab=pages`}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
             title="Back to Pages"
           >
             <ChevronLeft size={18} />
@@ -354,10 +391,10 @@ export default function PageEditor() {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                {pageId ? 'Editing Page' : 'New Page'}
+                {pageId ? 'Editing' : 'New Page'}
               </span>
-              <span className="inline-flex items-center gap-1 font-mono text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
-                <Globe size={11} />
+              <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 truncate max-w-[180px]">
+                <Globe size={11} className="shrink-0" />
                 /{locale}/{slug || 'custom-route'}
               </span>
             </div>
@@ -365,11 +402,11 @@ export default function PageEditor() {
         </div>
 
         {/* View Mode Switcher */}
-        <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/60">
+        <div className="flex items-center rounded-xl bg-slate-100 p-0.5 sm:p-1 border border-slate-200/60 order-3 sm:order-2 w-full sm:w-auto justify-center">
           <button
             type="button"
             onClick={() => setMode('visual')}
-            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
               mode === 'visual' ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
@@ -379,17 +416,17 @@ export default function PageEditor() {
           <button
             type="button"
             onClick={() => setMode('code')}
-            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
               mode === 'code' ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <FileCode size={14} />
-            <span>Code (IDE)</span>
+            <span>Code</span>
           </button>
           <button
             type="button"
             onClick={() => setMode('preview')}
-            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
               mode === 'preview' ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
@@ -399,7 +436,7 @@ export default function PageEditor() {
         </div>
 
         {/* Top Tools & Save Button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 order-2 sm:order-3">
           {/* App Files Explorer Button */}
           <button
             type="button"
@@ -407,18 +444,18 @@ export default function PageEditor() {
               loadFileTree()
               setFileViewerOpen(true)
             }}
-            className="flex items-center gap-1.5 h-9 px-3 text-xs font-semibold border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors"
+            className="flex items-center gap-1.5 h-9 px-2.5 sm:px-3 text-xs font-semibold border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors"
             title="Browse Application Files & Code"
           >
             <FolderTree size={16} />
-            <span className="hidden md:inline">App Files</span>
+            <span className="hidden md:inline">Files</span>
           </button>
 
           {/* Component Catalog Button */}
           <button
             type="button"
             onClick={() => setComponentCatalogOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-3 text-xs font-semibold border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors"
+            className="flex items-center gap-1.5 h-9 px-2.5 sm:px-3 text-xs font-semibold border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors"
             title="Available React Components & Functions"
           >
             <Layers size={16} />
@@ -442,7 +479,7 @@ export default function PageEditor() {
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-slate-950 text-white text-xs font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 h-9 px-3 sm:px-4 rounded-xl bg-slate-950 text-white text-xs font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm"
           >
             {isSaving ? (
               <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -455,34 +492,34 @@ export default function PageEditor() {
       </header>
 
       {/* ── SUB-BAR: QUICK CONTROLS ── */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2 text-xs">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-b border-slate-200 bg-white px-3 sm:px-4 py-2 text-xs gap-2 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
           <input
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Page Title..."
-            className="font-bold text-sm text-slate-900 outline-none placeholder:text-slate-400 bg-transparent min-w-[200px]"
+            className="font-bold text-sm text-slate-900 outline-none placeholder:text-slate-400 bg-transparent w-full sm:min-w-[200px]"
           />
-          <div className="h-4 w-px bg-slate-200" />
-          <div className="flex items-center gap-1">
-            <span className="text-slate-400 font-mono">/{locale}/</span>
+          <div className="hidden sm:block h-4 w-px bg-slate-200" />
+          <div className="flex items-center gap-1 w-full sm:w-auto">
+            <span className="text-slate-400 font-mono text-[11px] shrink-0">/{locale}/</span>
             <input
               type="text"
               value={slug}
               onChange={e => setSlug(e.target.value)}
               placeholder="route-slug"
-              className="font-mono text-xs text-slate-800 outline-none bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 focus:bg-white"
+              className="font-mono text-xs text-slate-800 outline-none bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 focus:bg-white w-full sm:w-44"
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
           {mode === 'code' && (
             <button
               type="button"
               onClick={() => setSplitPreview(!splitPreview)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+              className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
                 splitPreview
                   ? 'border-slate-900 bg-slate-900 text-white'
                   : 'border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -526,9 +563,9 @@ export default function PageEditor() {
             <Link
               href={`/${locale}/${slug}`}
               target="_blank"
-              className="flex items-center gap-1 text-slate-500 hover:text-slate-900"
+              className="flex items-center gap-1 text-slate-500 hover:text-slate-900 text-xs"
             >
-              <span>View Live</span>
+              <span>Live</span>
               <ExternalLink size={13} />
             </Link>
           )}
@@ -542,9 +579,13 @@ export default function PageEditor() {
           {/* Visual Mode */}
           {mode === 'visual' && (
             <div className="flex-1 overflow-y-auto p-6 md:p-12">
-              <div className="max-w-4xl mx-auto bg-white border border-slate-200/80 rounded-3xl p-8 md:p-12 shadow-xs">
-                <h1 className="text-3xl md:text-5xl font-black text-slate-950 mb-4">{title || 'Page Title'}</h1>
-                {description && <p className="text-base text-slate-600 mb-6">{description}</p>}
+              <div className={`mx-auto ${showCard ? 'max-w-4xl bg-white border border-slate-200/80 rounded-3xl p-8 md:p-12 shadow-xs' : 'max-w-5xl'}`}>
+                {showTitle && (
+                  <div className="pb-6 mb-6 border-b border-slate-100">
+                    <h1 className="text-3xl md:text-5xl font-black text-slate-950 mb-4">{title || 'Page Title'}</h1>
+                    {description && <p className="text-base text-slate-600">{description}</p>}
+                  </div>
+                )}
                 <div className="prose prose-slate max-w-none">
                   <Markdown
                     remarkPlugins={[remarkGfm]}
@@ -561,10 +602,10 @@ export default function PageEditor() {
           {/* Code Mode with optional Split Live Preview */}
           {mode === 'code' && (
             <>
-              <div className={`overflow-y-auto bg-white ${splitPreview ? 'w-1/2 border-r border-slate-200' : 'w-full'}`}>
-                <div className="p-2 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between text-[11px] text-slate-500 font-mono px-4">
+              <div className={`overflow-y-auto bg-white w-full ${splitPreview ? 'md:w-1/2 md:border-r border-slate-200' : ''}`}>
+                <div className="p-2 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between text-[11px] text-slate-500 font-mono px-3 sm:px-4">
                   <span>MARKDOWN & REACT/JSX IDE</span>
-                  <span>Type &lt; to trigger accessible components autocomplete</span>
+                  <span className="hidden sm:inline">Type &lt; to trigger components autocomplete</span>
                 </div>
                 <CodeMirror
                   ref={editorRef}
@@ -582,10 +623,14 @@ export default function PageEditor() {
               </div>
 
               {splitPreview && (
-                <div className="w-1/2 overflow-y-auto bg-slate-50/50 p-6">
-                  <div className="max-w-2xl mx-auto bg-white border border-slate-200/70 rounded-3xl p-6 md:p-8 shadow-xs">
-                    <h1 className="text-2xl md:text-4xl font-extrabold text-slate-950 mb-3">{title || 'Untitled'}</h1>
-                    {description && <p className="text-sm text-slate-600 mb-6">{description}</p>}
+                <div className="hidden md:block w-1/2 overflow-y-auto bg-slate-50/50 p-6">
+                  <div className={`mx-auto ${showCard ? 'max-w-2xl bg-white border border-slate-200/70 rounded-3xl p-6 md:p-8 shadow-xs' : 'max-w-2xl'}`}>
+                    {showTitle && (
+                      <div className="pb-4 mb-4 border-b border-slate-100">
+                        <h1 className="text-2xl md:text-4xl font-extrabold text-slate-950 mb-2">{title || 'Untitled'}</h1>
+                        {description && <p className="text-sm text-slate-600">{description}</p>}
+                      </div>
+                    )}
                     <div className="prose prose-slate max-w-none">
                       <Markdown
                         remarkPlugins={[remarkGfm]}
@@ -605,18 +650,22 @@ export default function PageEditor() {
           {mode === 'preview' && (
             <div className="flex-1 overflow-y-auto bg-slate-100 p-6 flex justify-center">
               <div
-                className="bg-white border border-slate-200 rounded-3xl p-8 md:p-12 shadow-sm transition-[max-width] duration-200 h-fit my-4"
+                className={`transition-[max-width] duration-200 h-fit my-4 ${
+                  showCard ? 'bg-white border border-slate-200 rounded-3xl p-8 md:p-12 shadow-sm' : 'bg-transparent p-4 md:p-6'
+                }`}
                 style={{ width: '100%', maxWidth: DEVICE_WIDTH[device] }}
               >
-                <div className="border-b border-slate-100 pb-6 mb-6">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    <span>Preview</span>
-                    <span>•</span>
-                    <span className="font-mono">/{locale}/{slug}</span>
+                {showTitle && (
+                  <div className="border-b border-slate-200/80 pb-6 mb-6">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                      <span>Preview</span>
+                      <span>•</span>
+                      <span className="font-mono">/{locale}/{slug}</span>
+                    </div>
+                    <h1 className="text-3xl md:text-5xl font-black text-slate-950 mb-3">{title}</h1>
+                    {description && <p className="text-base text-slate-600">{description}</p>}
                   </div>
-                  <h1 className="text-3xl md:text-5xl font-black text-slate-950 mb-3">{title}</h1>
-                  {description && <p className="text-base text-slate-600">{description}</p>}
-                </div>
+                )}
 
                 <div className="prose prose-slate max-w-none">
                   <Markdown
@@ -634,7 +683,7 @@ export default function PageEditor() {
 
         {/* ── SETTINGS SIDEBAR ── */}
         {settingsOpen && (
-          <aside className="w-80 shrink-0 border-l border-slate-200 bg-white p-5 overflow-y-auto space-y-6">
+          <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-80 shrink-0 border-l border-slate-200 bg-white p-5 overflow-y-auto space-y-6 shadow-2xl md:static md:shadow-none">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-bold text-sm text-slate-900">Page Settings</h3>
               <button
@@ -659,6 +708,37 @@ export default function PageEditor() {
                 <option value="published">Published (Live to public)</option>
                 <option value="draft">Draft (Admin preview only)</option>
               </select>
+            </div>
+
+            {/* Layout Options: Card & Title toggles */}
+            <div className="space-y-3 pt-3 border-t border-slate-100">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Layout & Display</h4>
+
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-semibold text-slate-900 block">Display in Card Box</span>
+                  <span className="text-[11px] text-slate-500 block">Wrap content inside white rounded card</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={showCard}
+                  onChange={e => setShowCard(e.target.checked)}
+                  className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 cursor-pointer"
+                />
+              </label>
+
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <span className="text-xs font-semibold text-slate-900 block">Display Page Title</span>
+                  <span className="text-[11px] text-slate-500 block">Show automatic header with page title</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={showTitle}
+                  onChange={e => setShowTitle(e.target.checked)}
+                  className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 cursor-pointer"
+                />
+              </label>
             </div>
 
             {/* Description */}
@@ -706,15 +786,15 @@ export default function PageEditor() {
 
       {/* ── APPLICATION FILES VIEWER (DRAWER / MODAL) ── */}
       {fileViewerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-5xl w-full h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-5xl w-full h-full sm:h-[85vh] flex flex-col shadow-2xl border-0 sm:border border-slate-200 overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/70">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50/70 shrink-0">
               <div className="flex items-center gap-2">
-                <FolderTree size={20} className="text-slate-800" />
+                <FolderTree size={20} className="text-slate-800 shrink-0" />
                 <div>
-                  <h3 className="font-bold text-base text-slate-950">Application Files & Source Explorer</h3>
-                  <p className="text-xs text-slate-500">
+                  <h3 className="font-bold text-sm sm:text-base text-slate-950">Application Files & Source Explorer</h3>
+                  <p className="hidden sm:block text-xs text-slate-500">
                     Explore, read, and inspect all accessible code files in this Next.js project.
                   </p>
                 </div>
@@ -730,9 +810,9 @@ export default function PageEditor() {
             </div>
 
             {/* Modal Body: File Tree (left) + File Reader (right) */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
               {/* File Tree Column */}
-              <div className="w-72 shrink-0 border-r border-slate-200 bg-white flex flex-col">
+              <div className="w-full md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-slate-200 bg-white flex flex-col max-h-48 md:max-h-none">
                 <div className="p-3 border-b border-slate-100">
                   <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
                     <Search size={14} className="text-slate-400 shrink-0" />
@@ -776,46 +856,66 @@ export default function PageEditor() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {selectedFile.content && (
+                        {selectedFile.content !== null && !selectedFile.isBinary && (
                           <>
                             <button
                               type="button"
+                              onClick={handleSaveFileContent}
+                              disabled={isFileSaving || !fileIsDirty}
+                              className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white px-2.5 py-1 rounded-md text-[11px] font-sans font-semibold transition-colors shadow-xs"
+                            >
+                              {isFileSaving ? (
+                                <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                              ) : (
+                                <Save size={12} />
+                              )}
+                              <span>{isFileSaving ? 'Saving…' : fileIsDirty ? 'Save Changes *' : 'Saved'}</span>
+                            </button>
+
+                            <button
+                              type="button"
                               onClick={() => {
-                                navigator.clipboard.writeText(selectedFile.content || '')
+                                navigator.clipboard.writeText(fileEditorContent)
                                 setCopiedCode(true)
                                 setTimeout(() => setCopiedCode(false), 2000)
                               }}
                               className="inline-flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-md text-[11px] font-sans transition-colors"
                             >
                               {copiedCode ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                              <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
+                              <span>{copiedCode ? 'Copied' : 'Copy'}</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => {
-                                insertSnippet(`\`\`\`${selectedFile.name.split('.').pop() || 'ts'}\n// Source: ${selectedFile.path}\n${selectedFile.content}\n\`\`\``)
+                                insertSnippet(`\`\`\`${selectedFile.name.split('.').pop() || 'ts'}\n// Source: ${selectedFile.path}\n${fileEditorContent}\n\`\`\``)
                                 setFileViewerOpen(false)
                               }}
                               className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded-md text-[11px] font-sans transition-colors"
                             >
                               <Plus size={12} />
-                              <span>Insert Into Page</span>
+                              <span className="hidden sm:inline">Insert Into Page</span>
                             </button>
                           </>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed">
+                    <div className="flex-1 overflow-auto flex flex-col font-mono text-xs leading-relaxed bg-slate-900">
                       {selectedFile.isBinary ? (
                         <div className="p-8 text-center text-slate-400">
-                          <p>Binary file ({selectedFile.extension}) cannot be displayed as plain text.</p>
+                          <p>Binary file ({selectedFile.extension}) cannot be displayed or edited as plain text.</p>
                         </div>
                       ) : (
-                        <pre className="text-slate-300">
-                          <code>{selectedFile.content}</code>
-                        </pre>
+                        <textarea
+                          value={fileEditorContent}
+                          onChange={e => {
+                            setFileEditorContent(e.target.value)
+                            setFileIsDirty(true)
+                          }}
+                          className="w-full h-full flex-1 bg-slate-900 text-slate-100 p-4 font-mono text-xs leading-relaxed outline-none resize-none selection:bg-blue-600 selection:text-white"
+                          spellCheck={false}
+                        />
                       )}
                     </div>
                   </>
@@ -836,16 +936,16 @@ export default function PageEditor() {
 
       {/* ── REACT COMPONENTS & FUNCTIONS CATALOG MODAL ── */}
       {componentCatalogOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/70">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-4xl w-full h-full sm:h-auto sm:max-h-[85vh] flex flex-col shadow-2xl border-0 sm:border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50/70 shrink-0">
               <div className="flex items-center gap-2">
-                <Layers size={20} className="text-slate-900" />
+                <Layers size={20} className="text-slate-900 shrink-0" />
                 <div>
-                  <h3 className="font-bold text-base text-slate-950">
+                  <h3 className="font-bold text-sm sm:text-base text-slate-950">
                     Accessible Components & Functions
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="hidden sm:block text-xs text-slate-500">
                     Use these interactive React components and utilities anywhere in your page.
                   </p>
                 </div>

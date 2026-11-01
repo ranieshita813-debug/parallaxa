@@ -24,7 +24,8 @@ import HomeSectionManager from '@/components/dashboard/HomeSectionManager';
 import PipelineManager from '@/components/dashboard/PipelineManager';
 import UserManager from '@/components/dashboard/UserManager';
 import PagesManager from '@/components/dashboard/PagesManager';
-import { Lightning, Users, Browsers } from '@phosphor-icons/react';
+import DbManager from '@/components/dashboard/DbManager';
+import { Lightning, Users, Browsers, Database } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -44,6 +45,7 @@ export default function Dashboard() {
     { id: 'articles', label: isBn ? 'নিবন্ধসমূহ' : 'Articles', icon: FileText, component: <ArticlesView /> },
     { id: 'analysis', label: isBn ? 'অ্যানালাইসিস' : 'Analysis', icon: ChartBar, component: <AnalysisView /> },
     { id: 'pages', label: isBn ? 'পেইজসমূহ' : 'Pages', icon: Browsers, component: <PagesManager />, adminOnly: true },
+    { id: 'database', label: isBn ? 'ডাটাবেস' : 'Database', icon: Database, component: <DbManager />, adminOnly: true },
     { id: 'pipeline', label: 'AI Pipeline', icon: Lightning, component: <PipelineManager />, adminOnly: true },
     { id: 'users', label: isBn ? 'ব্যবহারকারী' : 'Users', icon: Users, component: <UserManager />, adminOnly: true },
     { id: 'home-manager', label: isBn ? 'হোম ম্যানেজার' : 'Home Manager', icon: ListChecks, component: <HomeSectionManager />, adminOnly: true },

@@ -71,10 +71,20 @@ async function migrate() {
         status TEXT DEFAULT 'published',
         seo_title TEXT,
         meta_description TEXT,
+        show_card BOOLEAN DEFAULT TRUE,
+        show_title BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `;
+
+    try {
+      await sql`ALTER TABLE pages ADD COLUMN IF NOT EXISTS show_card BOOLEAN DEFAULT TRUE;`;
+      await sql`ALTER TABLE pages ADD COLUMN IF NOT EXISTS show_title BOOLEAN DEFAULT TRUE;`;
+      console.log('pages show_card and show_title columns checked/added.');
+    } catch (e) {
+      console.error('Alter pages table columns failed:', e);
+    }
 
     try {
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_frozen BOOLEAN DEFAULT FALSE;`;
