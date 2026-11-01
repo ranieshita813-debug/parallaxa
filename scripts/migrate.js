@@ -61,6 +61,21 @@ async function migrate() {
       );
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS pages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        content TEXT NOT NULL DEFAULT '',
+        description TEXT,
+        status TEXT DEFAULT 'published',
+        seo_title TEXT,
+        meta_description TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     try {
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_frozen BOOLEAN DEFAULT FALSE;`;
       console.log('users is_frozen column checked/added.');
