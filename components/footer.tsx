@@ -25,6 +25,7 @@ export function Footer() {
 
   const links = isBn
     ? [
+        { href: `/gita`, label: 'শ্রীমদ্ভগবদ্গীতা' },
         { href: `/category/World`, label: 'বিশ্ব সংবাদ' },
         { href: `/category/Technology`, label: 'প্রযুক্তি' },
         { href: `/category/Business`, label: 'ব্যবসা ও বাণিজ্য' },
@@ -34,6 +35,7 @@ export function Footer() {
         { href: `/contact`, label: 'যোগাযোগ' },
       ]
     : [
+        { href: `/gita`, label: 'Bhagavad Gita' },
         { href: `/category/World`, label: 'World' },
         { href: `/category/Technology`, label: 'Technology' },
         { href: `/category/Business`, label: 'Business' },

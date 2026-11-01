@@ -52,6 +52,16 @@ function isProtected(pathname: string): boolean {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // Block any direct access to CSV files or dataset files
+  const lowerPath = pathname.toLowerCase()
+  if (
+    lowerPath.endsWith('.csv') ||
+    lowerPath.includes('geeta_dataset') ||
+    (lowerPath.includes('gita') && lowerPath.includes('.csv'))
+  ) {
+    return new NextResponse('Not Found', { status: 404 })
+  }
+
   // Redirect /admin or /admin/ to dashboard (case-insensitive, with/without locale prefix)
   const bareLower = stripLocale(pathname).toLowerCase()
   if (bareLower === '/admin' || bareLower === '/admin/') {
@@ -61,7 +71,9 @@ export async function proxy(req: NextRequest) {
   }
 
   // 1. Skip static assets, API routes, AI routes (no locale, no auth check needed)
-  // /ai/* paths are excluded from locale redirect already handled below
+  if (pathname.startsWith('/api/') || pathname === '/api') {
+    return NextResponse.next()
+  }
 
   // 2. Auth guard — runs before locale redirect so the redirect URL is clean
   if (isProtected(pathname)) {
@@ -102,6 +114,6 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|api|favicon.ico|placeholder|icons|images|fonts|.*\\..*).*)',
+    '/((?!_next/static|_next/image|favicon.ico|placeholder|icons|images|fonts).*)',
   ],
 }
